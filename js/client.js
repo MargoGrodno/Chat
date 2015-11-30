@@ -1,164 +1,235 @@
-
-var ip = 'http://192.168.0.102';
+var ip = 'http://192.168.100.5';
 var port = '31337';
 
 var uniqueId = function() {
-	var date = Date.now();
-	var random = Math.random() * Math.random();
+    var date = Date.now();
+    var random = Math.random() * Math.random();
 
-	return Math.floor(date * random).toString();
+    return Math.floor(date * random).toString();
 };
 
 var theMessage = function(text) {
-	return {
-		text:text,
-		user: appState.user
-	};
+    return {
+        text: text,
+        user: appState.user
+    };
 };
 
+var generalId = uniqueId();
+
 var appState = {
-	user: 'User_' + uniqueId(),
-	mainUrl : ip+':'+port,
-	history:[],
-	token : 0
+    user: 'Guest_'+generalId,
+    id: generalId,
+    mainUrl: ip + ':' + port,
+    history: [],
+    token: 0
 };
 
 function run() {
 
-	var sendButton = document.getElementById('sendButton');
-	var newMessageBox = document.getElementById('newMessage');
+    $("#username").text(appState.user);
 
-	newMessageBox.addEventListener('keypress', function(e) {
-		if(e.keyCode == 13)
-			onSendButtonClick();
-		return false;
-	});
-	sendButton.addEventListener('click', onSendButtonClick);
-	doPolling();
+    var changeServerPopup = document.getElementById('changeServer');
+    var takeUsernamePopup = document.getElementById('takeUsername');
+    var modalOverlayMask = document.getElementById('modalOverlayMask');
+
+    $("#settingsButton").on("click", function() {
+        show([changeServerPopup, modalOverlayMask]);
+    });
+
+    $("#cancelIpButton").on("click", function() {
+        hide([changeServerPopup, modalOverlayMask]);
+    });
+
+    $("#cancelNameButton").on("click", function() {
+        hide([takeUsernamePopup, modalOverlayMask]);
+    });
+
+    $("#newMessageField").keypress(function(e) {
+        if (e.which == 13) {
+            onSendButtonClick();
+        }
+    });
+
+    $("#sendButton").on('click', onSendButtonClick);
+
+    $("#changeNameButton").on("click", onChangeNameButtonClick);
+
+    doPolling();
+}
+
+function hide(args) {
+    for (var i = args.length - 1; i >= 0; i--) {
+        args[i].style.display = "none";
+    };
+}
+
+function show(args) {
+    for (var i = args.length - 1; i >= 0; i--) {
+        args[i].style.display = "block";
+    };
+}
+
+function scrollHistoryBottom() {
+    var historyConteiner = document.getElementById('historyConteiner');
+    historyConteiner.scrollTop = historyConteiner.scrollHeight;
+}
+
+function onSendButtonClick() {
+
+    var newMessageBox = document.getElementById('newMessageField');
+    var newMessage = theMessage(newMessageBox.value);
+    if (newMessageBox.value == '')
+        return;
+
+    newMessageBox.value = '';
+    sendMessage(newMessage, function() {
+        console.log('Message sent ' + newMessage.text);
+    });
+}
+
+function onChangeNameButtonClick () {
+
+    var nameField = document.getElementById('nameField');
+    var newName = nameField.value;
+    
+    if (nameField.value == ''){
+        var emptyNameMessage = document.getElementById("emptyNameMessage");
+        emptyNameMessage.style.display = "block";
+        return;
+    }
+        
+
+    appState.user = newName;
+    $("#username").text(appState.user);
+
+    var takeUsernamePopup = document.getElementById('takeUsername');
+    var modalOverlayMask = document.getElementById('modalOverlayMask');
+    hide([takeUsernamePopup, modalOverlayMask]);
 
 }
 
-function onSendButtonClick(){
-	var newMessageBox = document.getElementById('newMessage');
-	var newMessage = theMessage(newMessageBox.value);
-
-	console.log(JSON.stringify(newMessage));
-
-	if(newMessageBox.value == '')
-		return;
-
-	newMessageBox.value = '';
-	sendMessage(newMessage, function() {
-		console.log('Message sent ' + newMessage.text);
-	});
-} 
-
 function sendMessage(message, continueWith) {
-	post(appState.mainUrl, JSON.stringify(message), function(){
-		continueWith && continueWith();
-	});
+    post(appState.mainUrl, JSON.stringify(message), function() {
+        continueWith && continueWith();
+    });
 }
 
 function updateHistory(newMessages) {
-	for(var i = 0; i < newMessages.length; i++)
-		addMessageInternal(newMessages[i]);
+    for (var i = 0; i < newMessages.length; i++)
+        addMessageInternal(newMessages[i]);
 }
 
 function addMessageInternal(message) {
-	var historyBox = document.getElementById('history');
-	var history = appState.history;
+    var history = appState.history;
+    history.push(message);
 
-	history.push(message);
-	historyBox.innerText = message.user + ' имел сказать:\n' + message.text + '\n\n' + historyBox.innerText;
+    var historyBox = document.getElementById('history');
+
+    var tmpl = _.template(document.getElementById('list-template').innerHTML);
+
+    var resultMessageDiv = tmpl({
+        time: "14:50",
+        name: message.user,
+        text: message.text
+    });
+
+    var tmpMessageDiv = document.createElement("div");
+    tmpMessageDiv.innerHTML = resultMessageDiv;
+    resultDiv = tmpMessageDiv.firstElementChild;
+    historyBox.appendChild(resultDiv);
 }
 
 function doPolling() {
-	function loop() {
-		var url = appState.mainUrl + '?token=' + appState.token;
+    function loop() {
+        var url = appState.mainUrl + '?token=' + appState.token;
 
-		get(url, function(responseText) {
-			var response = JSON.parse(responseText);
+        get(url, function(responseText) {
+            $("#offline").hide("slow");
+            var response = JSON.parse(responseText);
+            console.log(response);
+            appState.token = response.token;
+            updateHistory(response.messages);
+            scrollHistoryBottom();
+            setTimeout(loop, 1000);
+        }, function(error) {
+            console.log(error);
+            defaultErrorHandler(error);
+            setTimeout(loop, 1000);
+        });
+    }
 
-			appState.token = response.token;
-			updateHistory(response.messages);
-			setTimeout(loop, 1000);
-		}, function(error) {
-			defaultErrorHandler(error);
-			setTimeout(loop, 1000);
-		});
-	}
-
-	loop();
+    loop();
 }
 
 function defaultErrorHandler(message) {
-	var historyBox = document.getElementById('history');
-
-	console.error(message);
-	historyBox.innerText = 'ERROR:\n' + message + '\n';
+    var offlineBox = document.getElementById('offline');
+    offlineBox.innerText = 'ERROR:\n' + message + '\n';
+    $("#offline").show("slow");
+    console.error(message);
 }
 
 function get(url, continueWith, continueWithError) {
-	ajax('GET', url, null, continueWith, continueWithError);
+    ajax('GET', url, null, continueWith, continueWithError);
 }
 
 function post(url, data, continueWith, continueWithError) {
-	ajax('POST', url, data, continueWith, continueWithError);	
+    ajax('POST', url, data, continueWith, continueWithError);
 }
 
 function isError(text) {
-	if(text == "")
-		return false;
-	
-	try {
-		var obj = JSON.parse(text);
-	} catch(ex) {
-		return true;
-	}
+    if (text == "")
+        return false;
 
-	return !!obj.error;
+    try {
+        var obj = JSON.parse(text);
+    } catch (ex) {
+        return true;
+    }
+
+    return !!obj.error;
 }
 
 function ajax(method, url, data, continueWith, continueWithError) {
-	var xhr = new XMLHttpRequest();
+    var xhr = new XMLHttpRequest();
 
-	continueWithError = continueWithError || defaultErrorHandler;
-	xhr.open(method || 'GET', url, true);
+    continueWithError = continueWithError || defaultErrorHandler;
+    xhr.open(method || 'GET', url, true);
 
-	xhr.onload = function () {
-		if (xhr.readyState !== 4)
-			return;
+    xhr.onload = function() {
+        if (xhr.readyState !== 4)
+            return;
 
-		if(xhr.status != 200) {
-			continueWithError('Error on the server side, response ' + xhr.status);
-			return;
-		}
+        if (xhr.status != 200) {
+            continueWithError('Error on the server side, response ' + xhr.status);
+            return;
+        }
 
-		if(isError(xhr.responseText)) {
-			continueWithError('Error on the server side, response ' + xhr.responseText);
-			return;
-		}
+        if (isError(xhr.responseText)) {
+            continueWithError('Error on the server side, response ' + xhr.responseText);
+            return;
+        }
 
-		continueWith(xhr.responseText);
-	};    
+        continueWith(xhr.responseText);
+    };
 
-	xhr.ontimeout = function () {
-		сontinueWithError('Server timed out !');
-	}
+    xhr.ontimeout = function() {
+        сontinueWithError('Server timed out !');
+    }
 
-	xhr.onerror = function (e) {
-		var errMsg = 'Server connection error ' + appState.mainUrl + '\n'+
-		'\n' +
-		'Check if \n'+
-		'- server is active\n'+
-		'- server sends header "Access-Control-Allow-Origin:*"';
+    xhr.onerror = function(e) {
+        var errMsg = 'Server connection error ' + appState.mainUrl + '\n' +
+            '\n' +
+            'Check if \n' +
+            '- server is active\n' +
+            '- server sends header "Access-Control-Allow-Origin:*"';
 
-		continueWithError(errMsg);
-	};
+        continueWithError(errMsg);
+    };
 
-	xhr.send(data);
+    xhr.send(data);
 }
 
 window.onerror = function(err) {
-	defaultErrorHandler(err.toString());
+    defaultErrorHandler(err.toString());
 }

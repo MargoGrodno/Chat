@@ -1,0 +1,25 @@
+{
+  "name": "chat",
+  "description": "",
+  "main": "index.html",
+  "authors": [
+    "MargoGrodno"
+  ],
+  "license": "ISC",
+  "homepage": "https://github.com/MargoGrodno/Chat",
+  "moduleType": [
+    "node"
+  ],
+  "ignore": [
+    "**/.*",
+    "node_modules",
+    "bower_components",
+    "test",
+    "tests"
+  ],
+  "dependencies": {
+    "jquery": "~2.1.4",
+    "lodash": "~3.10.1",
+    "font-awesome": "fontawesome#~4.5.0"
+  }
+}
