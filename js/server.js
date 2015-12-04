@@ -26,24 +26,39 @@ var server = http.createServer(function(req, res) {
 function getHandler(req, res) {
     var token = getToken(req.url);
 
-    if (token > history.length) {
+    if (isFutureToken(token)) {
         responseWith(res, 401, token, null);
         return;
     }
 
-    if (token < history.length) {
+    if (isPastToken(token)) {
         var messages = history.slice(token, history.length);
         responseWith(res, 200, history.length, messages);
         return;
     }
 
+    console.assert(isActualToken(token));
+    
     toBeResponded.push({
         res: res,
         token: token
     });
 }
 
-function answer() {
+
+function isPastToken(token){
+    return token < history.length;
+}
+
+function isActualToken(token) {
+    return token == history.length;
+}
+
+function isFutureToken (token) {
+	return token > history.length
+}
+
+function answerAll() {
     toBeResponded.forEach(function(waiter) {
         var token = waiter.token;
         responseWith(waiter.res, 200, history.length, history.slice(token, history.length));
@@ -59,7 +74,7 @@ function postHandler(req, res) {
         console.log("post message: " +
             message.user + ", " + message.text + ", " + getHourMinutes(message.date));
         history.push(message);
-        answer();
+        answerAll();
         res.writeHeader(200, {
             'Access-Control-Allow-Origin': '*'
         });
@@ -99,7 +114,11 @@ function onDataComplete(req, handler) {
 
 function getHourMinutes(utcNumberDate) {
     var date = new Date(utcNumberDate);
-    return date.getHours() + ':' + date.getMinutes();
+    var hour = date.getHours();
+    var min  = date.getMinutes();
+    hour = (hour < 10 ? "0" : "") + hour;
+    min = (min < 10 ? "0" : "") + min;
+    return hour + ":" + min;
 }
 
 server.listen(port, ip);

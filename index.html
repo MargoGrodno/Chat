@@ -23,7 +23,7 @@
     <div class="popup" id="takeUsername">
         <p>Hello! Please, enter your name ;)</p>
         <p id="emptyNameMessage">You can't save empty name </p>
-        <input class="textField popupField" id="nameField" type="text">
+        <input autofocus class="textField popupField" id="nameField" type="text">
         <button class="popupButton" id="cancelNameButton" type="button">Cancel </button>
         <button class="popupButton" id="changeNameButton" type="button">Save </button>
     </div>
@@ -47,29 +47,6 @@
             <button id="sendButton" type="button">Send</button>
         </div>
     </div>
-    <script type="text/template" id="list-template">
-        <div class="messageConteiner">
-            <div class="k1">
-                <div class="time">
-                    <%=time%>
-                </div>
-                <div class="deleteMarker">
-                    <i class="fa fa-trash"></i>
-                </div>
-            </div>
-            <div class="k2">
-                <div class="name">
-                    <%=name%>
-                </div>
-                <div class="text">
-                    <%=text%>
-                </div>
-            </div>
-            <div class="k3">
-                <i class="fa fa-arrow-right"></i>
-            </div>
-        </div>
-    </script>
 </body>
 
 </html>

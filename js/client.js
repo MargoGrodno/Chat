@@ -4,23 +4,13 @@ var port = '31337';
 var uniqueId = function() {
     var date = Date.now();
     var random = Math.random() * Math.random();
-
     return Math.floor(date * random).toString();
-};
-
-var theMessage = function(text) {
-    var date = new Date();
-    return {
-        date: date.getTime(),
-        text: text,
-        user: appState.user
-    };
 };
 
 var generalId = uniqueId();
 
 var appState = {
-    user: 'Guest_'+generalId,
+    user: 'Guest_' + generalId,
     id: generalId,
     mainUrl: ip + ':' + port,
     history: [],
@@ -28,123 +18,10 @@ var appState = {
 };
 
 function run() {
-
     $("#username").text(appState.user);
-
-    var changeServerPopup = document.getElementById('changeServer');
-    var takeUsernamePopup = document.getElementById('takeUsername');
-    var modalOverlayMask = document.getElementById('modalOverlayMask');
-
-    $("#settingsButton").on("click", function() {
-        show([changeServerPopup, modalOverlayMask]);
-    });
-
-    $("#cancelIpButton").on("click", function() {
-        hide([changeServerPopup, modalOverlayMask]);
-    });
-
-    $("#cancelNameButton").on("click", function() {
-        hide([takeUsernamePopup, modalOverlayMask]);
-    });
-
-    $("#newMessageField").keypress(function(e) {
-        if (e.which == 13) {
-            onSendButtonClick();
-        }
-    });
-
-    $("#sendButton").on('click', onSendButtonClick);
-
-    $("#changeNameButton").on("click", onChangeNameButtonClick);
+    addEventListerers();
 
     doPolling();
-}
-
-function hide(args) {
-    for (var i = args.length - 1; i >= 0; i--) {
-        args[i].style.display = "none";
-    };
-}
-
-function show(args) {
-    for (var i = args.length - 1; i >= 0; i--) {
-        args[i].style.display = "block";
-    };
-}
-
-function scrollHistoryBottom() {
-    var historyConteiner = document.getElementById('historyConteiner');
-    historyConteiner.scrollTop = historyConteiner.scrollHeight;
-}
-
-function onSendButtonClick() {
-
-    var newMessageBox = document.getElementById('newMessageField');
-    var newMessage = theMessage(newMessageBox.value);
-    if (newMessageBox.value == '')
-        return;
-
-    newMessageBox.value = '';
-    sendMessage(newMessage, function() {
-        console.log('Message sent ' + newMessage.text);
-    });
-}
-
-function onChangeNameButtonClick () {
-
-    var nameField = document.getElementById('nameField');
-    var newName = nameField.value;
-    
-    if (nameField.value == ''){
-        var emptyNameMessage = document.getElementById("emptyNameMessage");
-        emptyNameMessage.style.display = "block";
-        return;
-    }
-        
-
-    appState.user = newName;
-    $("#username").text(appState.user);
-
-    var takeUsernamePopup = document.getElementById('takeUsername');
-    var modalOverlayMask = document.getElementById('modalOverlayMask');
-    hide([takeUsernamePopup, modalOverlayMask]);
-
-}
-
-function sendMessage(message, continueWith) {
-    post(appState.mainUrl, JSON.stringify(message), function() {
-        continueWith && continueWith();
-    });
-}
-
-function updateHistory(newMessages) {
-    for (var i = 0; i < newMessages.length; i++)
-        addMessageInternal(newMessages[i]);
-}
-
-function getHourMinutes(utcNumberDate) {
-    var date = new Date(utcNumberDate);
-    return date.getHours() + ':' + date.getMinutes();
-}
-
-function addMessageInternal(message) {
-    var history = appState.history;
-    history.push(message);
-
-    var historyBox = document.getElementById('history');
-
-    var tmpl = _.template(document.getElementById('list-template').innerHTML);
-
-    var resultMessageDiv = tmpl({
-        time: getHourMinutes(message.date),
-        name: message.user,
-        text: message.text
-    });
-
-    var tmpMessageDiv = document.createElement("div");
-    tmpMessageDiv.innerHTML = resultMessageDiv;
-    resultDiv = tmpMessageDiv.firstElementChild;
-    historyBox.appendChild(resultDiv);
 }
 
 function doPolling() {
@@ -169,19 +46,12 @@ function doPolling() {
     loop();
 }
 
-function defaultErrorHandler(message) {
-    var offlineBox = document.getElementById('offline');
-    offlineBox.innerText = 'ERROR:\n' + message + '\n';
-    $("#offline").show("slow");
-    console.error(message);
-}
-
 function get(url, continueWith, continueWithError) {
     ajax('GET', url, null, continueWith, continueWithError);
 }
 
 function post(url, data, continueWith, continueWithError) {
-    console.log("post: "+data);
+    console.log("post: " + data);
     ajax('POST', url, data, continueWith, continueWithError);
 }
 
@@ -241,3 +111,149 @@ function ajax(method, url, data, continueWith, continueWithError) {
 window.onerror = function(err) {
     defaultErrorHandler(err.toString());
 }
+
+function addEventListerers() {
+    $("#settingsButton").on("click", function() {
+        $('#ipField').focus();
+        show($("#changeServer"), $("#modalOverlayMask"));
+    });
+
+    $("#cancelIpButton").on("click", function() {
+        $('#newMessageField').focus();
+        hide($("#changeServer"), $("#modalOverlayMask"));
+    });
+
+    $("#cancelNameButton").on("click", function() {
+        $('#newMessageField').focus();
+        hide($("#takeUsername"), $("#modalOverlayMask"));
+    });
+
+    onEnterPressed($("#newMessageField"), onSendButtonClick);
+
+    onEnterPressed($("#nameField"), onChangeNameButtonClick);
+
+    $("#sendButton").on('click', onSendButtonClick);
+
+    $("#changeNameButton").on("click", onChangeNameButtonClick);
+}
+
+function defaultErrorHandler(message) {
+    var error = 'ERROR:\n' + message + '\n';
+    $("#offline").text(error);
+    $("#offline").show(1000);
+    console.error(message);
+}
+
+function onEnterPressed(field, action) {
+    field.keypress(function(e) {
+        if (e.which == 13) {
+            action();
+        }
+    });
+}
+
+function hide() {
+    for (var i = arguments.length - 1; i >= 0; i--) {
+        arguments[i].css("display", "none");
+    };
+}
+
+function show() {
+    for (var i = arguments.length - 1; i >= 0; i--) {
+        arguments[i].css("display", "block");
+    };
+}
+
+function scrollHistoryBottom() {
+    historyConteiner = $("#historyConteiner");
+    historyConteiner.scrollTop(historyConteiner.get(0).scrollHeight)
+}
+
+function onSendButtonClick() {
+    var msgText = $("#newMessageField").val();
+    if (msgText == '')
+        return;
+    $("#newMessageField").val("");
+    var newMessage = theMessage(msgText);
+    sendMessage(newMessage, function() {
+        console.log('Message sent ' + newMessage.text);
+    });
+}
+
+function onChangeNameButtonClick() {
+    var newName = $("#nameField").val();
+    if (newName == '') {
+        $("#emptyNameMessage").css("display", "block");
+        return;
+    }
+    appState.user = newName;
+    $("#username").text(appState.user);
+
+    hide($("#takeUsername"), $("#modalOverlayMask"));
+    $('#newMessageField').focus();
+}
+
+function sendMessage(message, continueWith) {
+    post(appState.mainUrl, JSON.stringify(message), function() {
+        continueWith && continueWith();
+    });
+}
+
+var theMessage = function(text) {
+    var date = new Date();
+    return {
+        id: appState.id,
+        user: appState.user,
+        date: date.getTime(),
+        text: text
+    };
+};
+
+function updateHistory(newMessages) {
+    for (var i = 0; i < newMessages.length; i++)
+        addMessageInternal(newMessages[i]);
+}
+
+function addMessageInternal(message) {
+    var history = appState.history;
+    history.push(message);
+
+    var resultMessageDiv = tmplMessage({
+        time: getHourMinutes(message.date),
+        name: message.user,
+        text: message.text
+    });
+
+    $("#history").append(resultMessageDiv);
+}
+
+function getHourMinutes(utcNumberDate) {
+    var date = new Date(utcNumberDate);
+    var hour = date.getHours();
+    var min = date.getMinutes();
+    hour = (hour < 10 ? "0" : "") + hour;
+    min = (min < 10 ? "0" : "") + min;
+    return hour + ":" + min;
+}
+
+var tmplMessage = _.template('<div class="messageConteiner">\
+            <div class="k1">\
+                <div class="time">\
+                    <%=time%>\
+                </div>\
+                <div class="deleteMarker">\
+                    <i class="fa fa-trash"></i>\
+                </div>\
+            </div>\
+            <div class="k2">\
+                <div class="name">\
+                    <%=name%>\
+                </div>\
+                <div class="text">\
+                    <%=text%>\
+                </div>\
+            </div>\
+            <div class="k3">\
+                <i class="fa fa-arrow-right"></i>\
+            </div>\
+        </div>');
