@@ -1,4 +1,4 @@
-var ip = 'http://192.168.100.5';
+var ip = 'http://192.168.0.102';
 var port = '31337';
 
 var uniqueId = function() {
@@ -9,7 +9,9 @@ var uniqueId = function() {
 };
 
 var theMessage = function(text) {
+    var date = new Date();
     return {
+        date: date.getTime(),
         text: text,
         user: appState.user
     };
@@ -120,6 +122,11 @@ function updateHistory(newMessages) {
         addMessageInternal(newMessages[i]);
 }
 
+function getHourMinutes(utcNumberDate) {
+    var date = new Date(utcNumberDate);
+    return date.getHours() + ':' + date.getMinutes();
+}
+
 function addMessageInternal(message) {
     var history = appState.history;
     history.push(message);
@@ -129,7 +136,7 @@ function addMessageInternal(message) {
     var tmpl = _.template(document.getElementById('list-template').innerHTML);
 
     var resultMessageDiv = tmpl({
-        time: "14:50",
+        time: getHourMinutes(message.date),
         name: message.user,
         text: message.text
     });
@@ -174,6 +181,7 @@ function get(url, continueWith, continueWithError) {
 }
 
 function post(url, data, continueWith, continueWithError) {
+    console.log("post: "+data);
     ajax('POST', url, data, continueWith, continueWithError);
 }
 
