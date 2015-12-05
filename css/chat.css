@@ -144,6 +144,7 @@ p {
 #historyConteiner {
     position: relative;
     background: white;
+
     border: solid 1px;
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;

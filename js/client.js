@@ -27,15 +27,22 @@ function run() {
 function doPolling() {
     function loop() {
         var url = appState.mainUrl + '?token=' + appState.token;
-
+        console.log("get to url: " + url);
+        var requestUrl = appState.mainUrl;
         get(url, function(responseText) {
             $("#offline").hide("slow");
-            var response = JSON.parse(responseText);
-            console.log(response);
-            appState.token = response.token;
-            updateHistory(response.messages);
-            scrollHistoryBottom();
-            setTimeout(loop, 1000);
+            var curentUrl = appState.mainUrl;
+            console.log("appState.mainUrl: " + curentUrl + ", url: " + requestUrl)
+            if (curentUrl == requestUrl) {
+                var response = JSON.parse(responseText);
+                console.log("response token - " + response.token);
+                appState.token = response.token;
+                updateHistory(response.messages);
+                scrollHistoryBottom();
+                setTimeout(loop, 1000);
+            } else {
+                console.log("server adress edited!!!");
+            }
         }, function(error) {
             console.log(error);
             defaultErrorHandler(error);
@@ -114,11 +121,12 @@ window.onerror = function(err) {
 
 function addEventListerers() {
     $("#settingsButton").on("click", function() {
-        $('#ipField').focus();
+        $('#curentServer').text(appState.mainUrl);
+        $('#serverAddressField').focus();
         show($("#changeServer"), $("#modalOverlayMask"));
     });
 
-    $("#cancelIpButton").on("click", function() {
+    $("#cancelChangeServerButton").on("click", function() {
         $('#newMessageField').focus();
         hide($("#changeServer"), $("#modalOverlayMask"));
     });
@@ -132,9 +140,13 @@ function addEventListerers() {
 
     onEnterPressed($("#nameField"), onChangeNameButtonClick);
 
+    onEnterPressed($("#serverAddressField"), onChangeServerButtonClick)
+
     $("#sendButton").on('click', onSendButtonClick);
 
     $("#changeNameButton").on("click", onChangeNameButtonClick);
+
+    $("#changeServerButton").on("click", onChangeServerButtonClick);
 }
 
 function defaultErrorHandler(message) {
@@ -191,6 +203,25 @@ function onChangeNameButtonClick() {
 
     hide($("#takeUsername"), $("#modalOverlayMask"));
     $('#newMessageField').focus();
+}
+
+function onChangeServerButtonClick() {
+    var newIp = $("#serverAddressField").val();
+    console.log(newIp);
+
+    appState.mainUrl = 'http://' + newIp;
+    appState.token = 0;
+
+    cleanHistory();
+
+    doPolling();
+
+    hide($("#changeServer"), $("#modalOverlayMask"));
+    $('#newMessageField').focus();
+}
+
+function cleanHistory() {
+    $("#history").empty();
 }
 
 function sendMessage(message, continueWith) {

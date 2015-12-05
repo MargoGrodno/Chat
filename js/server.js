@@ -7,7 +7,7 @@ var url = require('url');
 var getIp = require('./getIp');
 
 var ip = getIp();
-var port = 31337;
+var port = 31338;
 
 var server = http.createServer(function(req, res) {
 
@@ -92,7 +92,7 @@ function responseWith(response, statusCode, token, messages) {
             token: token,
             messages: messages
         }));
-    }
+    };
     response.end();
 }
 
