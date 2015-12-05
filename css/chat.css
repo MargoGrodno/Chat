@@ -150,7 +150,6 @@ p {
     -moz-box-sizing: border-box;
     box-sizing: border-box;
     height: calc(100% - 118px);
-    overflow: auto;
 }
 
 #offline {
@@ -163,6 +162,7 @@ p {
     position: absolute;
     width: 100%;
     display: none;
+    z-index: 2;
 }
 
 #history {
@@ -171,6 +171,8 @@ p {
     -moz-box-sizing: border-box;
     box-sizing: border-box;
     padding: 0 3%;
+    height: 100%;
+    overflow: auto;
 }
 
 .newMessage {

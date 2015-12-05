@@ -32,7 +32,6 @@ function doPolling() {
         isExpectRes = true;
 
         get(url, function(responseText) {
-
             if (isExpectRes && (appState.mainUrl == requestUrl)) {
                 $("#offline").hide("slow");
                 var response = JSON.parse(responseText);
@@ -173,8 +172,8 @@ function onEnterPressed(field, action) {
 }
 
 function scrollHistoryBottom() {
-    historyConteiner = $("#historyConteiner");
-    historyConteiner.scrollTop(historyConteiner.get(0).scrollHeight)
+    historyConteiner = $("#history");
+    historyConteiner.scrollTop(historyConteiner.get(0).scrollHeight);
 }
 
 function onSendButtonClick() {

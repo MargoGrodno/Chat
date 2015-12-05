@@ -45,6 +45,10 @@ function getHandler(req, res) {
     });
 }
 
+function getToken(u) {
+    var parts = url.parse(u, true);
+    return parts.query.token;
+}
 
 function isPastToken(token){
     return token < history.length;
@@ -67,21 +71,6 @@ function answerAll() {
     toBeResponded = [];
 }
 
-
-
-function postHandler(req, res) {
-    onDataComplete(req, function(message) {
-        console.log("post message: " +
-            message.user + ", " + message.text + ", " + getHourMinutes(message.date));
-        history.push(message);
-        answerAll();
-        res.writeHeader(200, {
-            'Access-Control-Allow-Origin': '*'
-        });
-        res.end();
-    });
-}
-
 function responseWith(response, statusCode, token, messages) {
     response.writeHeader(statusCode, {
         'Access-Control-Allow-Origin': '*'
@@ -96,9 +85,18 @@ function responseWith(response, statusCode, token, messages) {
     response.end();
 }
 
-function getToken(u) {
-    var parts = url.parse(u, true);
-    return parts.query.token;
+function postHandler(req, res) {
+    onDataComplete(req, function(message) {
+    	message.msgId = uniqueId();
+        console.log("post message: " +
+            message.user + ", " + message.text + ", " + getHourMinutes(message.date)+ ", " + message.msgId);
+        history.push(message);
+        answerAll();
+        res.writeHeader(200, {
+            'Access-Control-Allow-Origin': '*'
+        });
+        res.end();
+    });
 }
 
 function onDataComplete(req, handler) {
@@ -120,6 +118,12 @@ function getHourMinutes(utcNumberDate) {
     min = (min < 10 ? "0" : "") + min;
     return hour + ":" + min;
 }
+
+function uniqueId() {
+    var date = Date.now();
+    var random = Math.random() * Math.random();
+    return Math.floor(date * random).toString();
+};
 
 server.listen(port, ip);
 server.setTimeout(0);
