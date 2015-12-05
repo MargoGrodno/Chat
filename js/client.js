@@ -1,4 +1,4 @@
-var ip = 'http://192.168.0.102';
+var ip = '192.168.0.102';
 var port = '31337';
 
 var uniqueId = function() {
@@ -7,13 +7,13 @@ var uniqueId = function() {
     return Math.floor(date * random).toString();
 };
 
+var isExpectRes = false;
 var generalId = uniqueId();
 
 var appState = {
     user: 'Guest_' + generalId,
     id: generalId,
     mainUrl: ip + ':' + port,
-    history: [],
     token: 0
 };
 
@@ -26,22 +26,20 @@ function run() {
 
 function doPolling() {
     function loop() {
-        var url = appState.mainUrl + '?token=' + appState.token;
-        console.log("get to url: " + url);
+        var url = 'http://' + appState.mainUrl + '?token=' + appState.token;
+
         var requestUrl = appState.mainUrl;
+        isExpectRes = true;
+
         get(url, function(responseText) {
-            $("#offline").hide("slow");
-            var curentUrl = appState.mainUrl;
-            console.log("appState.mainUrl: " + curentUrl + ", url: " + requestUrl)
-            if (curentUrl == requestUrl) {
+
+            if (isExpectRes && (appState.mainUrl == requestUrl)) {
+                $("#offline").hide("slow");
                 var response = JSON.parse(responseText);
-                console.log("response token - " + response.token);
                 appState.token = response.token;
                 updateHistory(response.messages);
-                scrollHistoryBottom();
                 setTimeout(loop, 1000);
-            } else {
-                console.log("server adress edited!!!");
+                isExpectRes = false;
             }
         }, function(error) {
             console.log(error);
@@ -103,7 +101,7 @@ function ajax(method, url, data, continueWith, continueWithError) {
     }
 
     xhr.onerror = function(e) {
-        var errMsg = 'Server connection error ' + appState.mainUrl + '\n' +
+        var errMsg = 'Server connection error http://' + appState.mainUrl + '\n' +
             '\n' +
             'Check if \n' +
             '- server is active\n' +
@@ -122,19 +120,15 @@ window.onerror = function(err) {
 function addEventListerers() {
     $("#settingsButton").on("click", function() {
         $('#curentServer').text(appState.mainUrl);
+        $("#changeServer").show();
+        $("#modalOverlayMask").show();
+        $('#serverAddressField').val(appState.mainUrl);
         $('#serverAddressField').focus();
-        show($("#changeServer"), $("#modalOverlayMask"));
     });
 
-    $("#cancelChangeServerButton").on("click", function() {
-        $('#newMessageField').focus();
-        hide($("#changeServer"), $("#modalOverlayMask"));
-    });
+    $("#cancelChangeServerButton").on("click", closeChangeServerPopup);
 
-    $("#cancelNameButton").on("click", function() {
-        $('#newMessageField').focus();
-        hide($("#takeUsername"), $("#modalOverlayMask"));
-    });
+    $("#cancelNameButton").on("click", closeNamePopup);
 
     onEnterPressed($("#newMessageField"), onSendButtonClick);
 
@@ -147,6 +141,20 @@ function addEventListerers() {
     $("#changeNameButton").on("click", onChangeNameButtonClick);
 
     $("#changeServerButton").on("click", onChangeServerButtonClick);
+}
+
+function closeChangeServerPopup() {
+    $("#changeServerErrorMessage").hide();
+    $("#modalOverlayMask").hide();
+    $("#changeServer").hide();
+    $('#newMessageField').focus();
+}
+
+function closeNamePopup() {
+    $("#nameErrorMessage").hide();
+    $("#modalOverlayMask").hide();
+    $("#takeUsername").hide();
+    $('#newMessageField').focus();
 }
 
 function defaultErrorHandler(message) {
@@ -162,18 +170,6 @@ function onEnterPressed(field, action) {
             action();
         }
     });
-}
-
-function hide() {
-    for (var i = arguments.length - 1; i >= 0; i--) {
-        arguments[i].css("display", "none");
-    };
-}
-
-function show() {
-    for (var i = arguments.length - 1; i >= 0; i--) {
-        arguments[i].css("display", "block");
-    };
 }
 
 function scrollHistoryBottom() {
@@ -195,29 +191,37 @@ function onSendButtonClick() {
 function onChangeNameButtonClick() {
     var newName = $("#nameField").val();
     if (newName == '') {
-        $("#emptyNameMessage").css("display", "block");
+        $("#nameErrorMessage").text("You can't save empty name!");
+        $("#nameErrorMessage").show();
         return;
     }
-    appState.user = newName;
-    $("#username").text(appState.user);
+    changeName(newName);
+    closeNamePopup();
+}
 
-    hide($("#takeUsername"), $("#modalOverlayMask"));
-    $('#newMessageField').focus();
+function changeName(name) {
+    appState.user = name;
+    $("#username").text(appState.user);
 }
 
 function onChangeServerButtonClick() {
-    var newIp = $("#serverAddressField").val();
-    console.log(newIp);
+    var newAddress = $("#serverAddressField").val();
+    console.log(newAddress);
 
-    appState.mainUrl = 'http://' + newIp;
+    if (newAddress == '') {
+        $("#changeServerErrorMessage").text("You can't save empty address!");
+        $("#changeServerErrorMessage").show();
+        return;
+    }
+    changeServer(newAddress);
+    closeChangeServerPopup();
+}
+
+function changeServer(newAddress) {
+    appState.mainUrl = newAddress;
     appState.token = 0;
-
     cleanHistory();
-
     doPolling();
-
-    hide($("#changeServer"), $("#modalOverlayMask"));
-    $('#newMessageField').focus();
 }
 
 function cleanHistory() {
@@ -225,7 +229,7 @@ function cleanHistory() {
 }
 
 function sendMessage(message, continueWith) {
-    post(appState.mainUrl, JSON.stringify(message), function() {
+    post('http://' + appState.mainUrl, JSON.stringify(message), function() {
         continueWith && continueWith();
     });
 }
@@ -246,9 +250,7 @@ function updateHistory(newMessages) {
 }
 
 function addMessageInternal(message) {
-    var history = appState.history;
-    history.push(message);
-
+    var tmplMessage = _.template(document.getElementById('list-template').innerHTML);
     var resultMessageDiv = tmplMessage({
         time: getHourMinutes(message.date),
         name: message.user,
@@ -256,6 +258,7 @@ function addMessageInternal(message) {
     });
 
     $("#history").append(resultMessageDiv);
+    scrollHistoryBottom();
 }
 
 function getHourMinutes(utcNumberDate) {
@@ -266,25 +269,3 @@ function getHourMinutes(utcNumberDate) {
     min = (min < 10 ? "0" : "") + min;
     return hour + ":" + min;
 }
-
-var tmplMessage = _.template('<div class="messageConteiner">\
-            <div class="k1">\
-                <div class="time">\
-                    <%=time%>\
-                </div>\
-                <div class="deleteMarker">\
-                    <i class="fa fa-trash"></i>\
-                </div>\
-            </div>\
-            <div class="k2">\
-                <div class="name">\
-                    <%=name%>\
-                </div>\
-                <div class="text">\
-                    <%=text%>\
-                </div>\
-            </div>\
-            <div class="k3">\
-                <i class="fa fa-arrow-right"></i>\
-            </div>\
-        </div>');

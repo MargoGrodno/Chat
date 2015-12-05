@@ -101,7 +101,7 @@ p {
     border: solid black 1px;
 }
 
-#emptyNameMessage {
+.popupErrorMessage {
     color: #800000;
     display: none;
 }

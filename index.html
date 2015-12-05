@@ -10,19 +10,21 @@
     <script src="bower_components/jquery/dist/jquery.min.js"></script>
     <script src="bower_components/lodash/lodash.min.js"></script>
     <script src="js/client.js"></script>
-    
 </head>
 
 <body onload="run();">
     <div class="popup" id="changeServer">
-        <p>Curent server address is <span id="curentServer"></span><br><br>Enter address of new server in format "ip:port" :</p>
+        <p>Curent server address is <span id="curentServer"></span>
+            <br>
+            <br>Enter address of new server in format "ip:port" :</p>
+        <p class="popupErrorMessage" id="changeServerErrorMessage"></p>
         <input class="textField popupField" id="serverAddressField" type="text">
         <button class="popupButton" id="cancelChangeServerButton" type="button">Cancel </button>
         <button class="popupButton" id="changeServerButton" type="button">Change </button>
     </div>
     <div class="popup" id="takeUsername">
         <p>Hello! Please, enter your name ;)</p>
-        <p id="emptyNameMessage">You can't save empty name </p>
+        <p class="popupErrorMessage" id="nameErrorMessage"></p>
         <input autofocus class="textField popupField" id="nameField" type="text">
         <button class="popupButton" id="cancelNameButton" type="button">Cancel </button>
         <button class="popupButton" id="changeNameButton" type="button">Save </button>
@@ -48,5 +50,28 @@
         </div>
     </div>
 </body>
+<script type="text/template" id="list-template">
+    <div class="messageConteiner">
+        <div class="k1">
+            <div class="time">
+                <%=time%>
+            </div>
+            <div class="deleteMarker">
+                <i class="fa fa-trash"></i>
+            </div>
+        </div>
+        <div class="k2">
+            <div class="name">
+                <%=name%>
+            </div>
+            <div class="text">
+                <%=text%>
+            </div>
+        </div>
+        <div class="k3">
+            <i class="fa fa-arrow-right"></i>
+        </div>
+    </div>
+</script>
 
 </html>
