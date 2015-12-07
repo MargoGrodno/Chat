@@ -1,4 +1,4 @@
-var ip = '192.168.0.102';
+var ip = '192.168.0.103';
 var port = '31337';
 
 var uniqueId = function() {
@@ -253,7 +253,8 @@ function addMessageInternal(message) {
     var resultMessageDiv = tmplMessage({
         time: getHourMinutes(message.date),
         name: message.user,
-        text: message.text
+        text: message.text, 
+        id: message.msgId
     });
 
     $("#history").append(resultMessageDiv);

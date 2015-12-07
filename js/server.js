@@ -7,7 +7,7 @@ var url = require('url');
 var getIp = require('./getIp');
 
 var ip = getIp();
-var port = 31338;
+var port = 31337;
 
 var server = http.createServer(function(req, res) {
 
@@ -38,7 +38,7 @@ function getHandler(req, res) {
     }
 
     console.assert(isActualToken(token));
-    
+
     toBeResponded.push({
         res: res,
         token: token
@@ -50,7 +50,7 @@ function getToken(u) {
     return parts.query.token;
 }
 
-function isPastToken(token){
+function isPastToken(token) {
     return token < history.length;
 }
 
@@ -58,8 +58,8 @@ function isActualToken(token) {
     return token == history.length;
 }
 
-function isFutureToken (token) {
-	return token > history.length
+function isFutureToken(token) {
+    return token > history.length
 }
 
 function answerAll() {
@@ -87,9 +87,10 @@ function responseWith(response, statusCode, token, messages) {
 
 function postHandler(req, res) {
     onDataComplete(req, function(message) {
-    	message.msgId = uniqueId();
+        message.msgId = uniqueId();
         console.log("post message: " +
-            message.user + ", " + message.text + ", " + getHourMinutes(message.date)+ ", " + message.msgId);
+            message.user + ", " + message.text + ", " +
+            getHourMinutes(message.date) + ", " + message.msgId);
         history.push(message);
         answerAll();
         res.writeHeader(200, {
@@ -113,7 +114,7 @@ function onDataComplete(req, handler) {
 function getHourMinutes(utcNumberDate) {
     var date = new Date(utcNumberDate);
     var hour = date.getHours();
-    var min  = date.getMinutes();
+    var min = date.getMinutes();
     hour = (hour < 10 ? "0" : "") + hour;
     min = (min < 10 ? "0" : "") + min;
     return hour + ":" + min;
@@ -125,6 +126,49 @@ function uniqueId() {
     return Math.floor(date * random).toString();
 };
 
-server.listen(port, ip);
-server.setTimeout(0);
-console.log('Server running at http://' + ip + ':' + port);
+function startServerOnArbitraryPort() {
+    takePortForStart(function(incomingPort) {
+        port = incomingPort;
+        startServer();
+    }, function() {
+        startServer();
+    });
+}
+
+function startServer() {
+    server.listen(port, ip);
+    server.setTimeout(0);
+    console.log('Server running at http://' + ip + ':' + port);
+}
+
+function createRL() {
+    var readline = require('readline');
+    var rl = readline.createInterface({
+        input: process.stdin,
+        output: process.stdout,
+        terminal: false
+    });
+    return rl;
+}
+
+function isStrIsNumber(str) {
+    var regex = new RegExp(/^[0-9]+$/);
+    return regex.test(str);
+}
+
+function takePortForStart(succeed, failure) {
+    var rl = createRL();
+    console.log('Enter port for server ');
+
+    rl.on('line', function(incomingStr) {
+        rl.close();
+        if (isStrIsNumber(incomingStr)) {
+            succeed(Number(incomingStr));
+        } else {
+            console.log(incomingStr + ' is not a number');
+            failure()
+        }
+    });
+};
+
+startServerOnArbitraryPort();
