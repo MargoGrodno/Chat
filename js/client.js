@@ -19,8 +19,8 @@ var appState = {
 
 function run() {
     $("#username").text(appState.user);
-    addEventListerers();
 
+    addEventListerers();
     doPolling();
 }
 
@@ -57,6 +57,13 @@ function get(url, continueWith, continueWithError) {
 function post(url, data, continueWith, continueWithError) {
     console.log("post: " + data);
     ajax('POST', url, data, continueWith, continueWithError);
+}
+
+function defaultErrorHandler(message) {
+    var error = 'ERROR:\n' + message + '\n';
+    $("#offline").text(error);
+    $("#offline").show(1000);
+    console.error(message);
 }
 
 function isError(text) {
@@ -116,30 +123,57 @@ window.onerror = function(err) {
     defaultErrorHandler(err.toString());
 }
 
-function addEventListerers() {
-    $("#settingsButton").on("click", function() {
-        $('#curentServer').text(appState.mainUrl);
-        $("#changeServer").show();
-        $("#modalOverlayMask").show();
-        $('#serverAddressField').val(appState.mainUrl);
-        $('#serverAddressField').focus();
+function changeServer(newAddress) {
+    appState.mainUrl = newAddress;
+    appState.token = 0;
+    cleanHistory();
+    doPolling();
+}
+
+function sendMessage(message, continueWith) {
+    post('http://' + appState.mainUrl, JSON.stringify(message), function() {
+        continueWith && continueWith();
+    });
+}
+
+function updateHistory(newMessages) {
+    for (var i = 0; i < newMessages.length; i++)
+        addMessageInternal(newMessages[i]);
+}
+
+function addMessageInternal(message) {
+    var tmplMessage = _.template(document.getElementById('list-template').innerHTML);
+    var resultMessageDiv = tmplMessage({
+        time: getHourMinutes(message.date),
+        name: message.user,
+        text: message.text,
+        id: message.msgId
     });
 
-    $("#cancelChangeServerButton").on("click", closeChangeServerPopup);
+    $("#history").append(resultMessageDiv);
+    scrollHistoryBottom();
+}
 
-    $("#cancelNameButton").on("click", closeNamePopup);
-
+function addEventListerers() {
     onEnterPressed($("#newMessageField"), onSendButtonClick);
-
-    onEnterPressed($("#nameField"), onChangeNameButtonClick);
-
-    onEnterPressed($("#serverAddressField"), onChangeServerButtonClick)
-
     $("#sendButton").on('click', onSendButtonClick);
 
-    $("#changeNameButton").on("click", onChangeNameButtonClick);
-
+    $("#settingsButton").on("click", openChangeServerPopup);
+    onEnterPressed($("#serverAddressField"), onChangeServerButtonClick)
     $("#changeServerButton").on("click", onChangeServerButtonClick);
+    $("#cancelChangeServerButton").on("click", closeChangeServerPopup);
+
+    onEnterPressed($("#nameField"), onChangeNameButtonClick);
+    $("#changeNameButton").on("click", onChangeNameButtonClick);
+    $("#cancelNameButton").on("click", closeNamePopup);
+}
+
+function openChangeServerPopup() {
+    $('#curentServer').text(appState.mainUrl);
+    $("#changeServer").show();
+    $("#modalOverlayMask").show();
+    $('#serverAddressField').val(appState.mainUrl);
+    $('#serverAddressField').focus();
 }
 
 function closeChangeServerPopup() {
@@ -156,13 +190,6 @@ function closeNamePopup() {
     $('#newMessageField').focus();
 }
 
-function defaultErrorHandler(message) {
-    var error = 'ERROR:\n' + message + '\n';
-    $("#offline").text(error);
-    $("#offline").show(1000);
-    console.error(message);
-}
-
 function onEnterPressed(field, action) {
     field.keypress(function(e) {
         if (e.which == 13) {
@@ -171,10 +198,24 @@ function onEnterPressed(field, action) {
     });
 }
 
+function cleanHistory() {
+    $("#history").empty();
+}
+
 function scrollHistoryBottom() {
     historyConteiner = $("#history");
     historyConteiner.scrollTop(historyConteiner.get(0).scrollHeight);
 }
+
+var theMessage = function(text) {
+    var date = new Date();
+    return {
+        id: appState.id,
+        user: appState.user,
+        date: date.getTime(),
+        text: text
+    };
+};
 
 function onSendButtonClick() {
     var msgText = $("#newMessageField").val();
@@ -214,51 +255,6 @@ function onChangeServerButtonClick() {
     }
     changeServer(newAddress);
     closeChangeServerPopup();
-}
-
-function changeServer(newAddress) {
-    appState.mainUrl = newAddress;
-    appState.token = 0;
-    cleanHistory();
-    doPolling();
-}
-
-function cleanHistory() {
-    $("#history").empty();
-}
-
-function sendMessage(message, continueWith) {
-    post('http://' + appState.mainUrl, JSON.stringify(message), function() {
-        continueWith && continueWith();
-    });
-}
-
-var theMessage = function(text) {
-    var date = new Date();
-    return {
-        id: appState.id,
-        user: appState.user,
-        date: date.getTime(),
-        text: text
-    };
-};
-
-function updateHistory(newMessages) {
-    for (var i = 0; i < newMessages.length; i++)
-        addMessageInternal(newMessages[i]);
-}
-
-function addMessageInternal(message) {
-    var tmplMessage = _.template(document.getElementById('list-template').innerHTML);
-    var resultMessageDiv = tmplMessage({
-        time: getHourMinutes(message.date),
-        name: message.user,
-        text: message.text, 
-        id: message.msgId
-    });
-
-    $("#history").append(resultMessageDiv);
-    scrollHistoryBottom();
 }
 
 function getHourMinutes(utcNumberDate) {

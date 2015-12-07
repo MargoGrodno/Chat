@@ -1,16 +1,16 @@
 var http = require('http');
-var history = [];
 var util = require('util');
-var toBeResponded = [];
 var assert = require('assert');
 var url = require('url');
 var getIp = require('./getIp');
+
+var history = [];
+var toBeResponded = [];
 
 var ip = getIp();
 var port = 31337;
 
 var server = http.createServer(function(req, res) {
-
     console.log('method: ' + req.method);
 
     if (req.method == 'GET') {
