@@ -105,6 +105,7 @@ p {
     color: #800000;
     display: none;
 }
+
 .popup {
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
@@ -144,7 +145,6 @@ p {
 #historyConteiner {
     position: relative;
     background: white;
-
     border: solid 1px;
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
@@ -170,7 +170,6 @@ p {
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
     box-sizing: border-box;
-    padding: 0 3%;
     height: 100%;
     overflow: auto;
 }
@@ -207,12 +206,13 @@ p {
 
 .messageConteiner {
     position: relative;
-    padding: 10px 0 10px 0;
+    padding: 10px 20px;
 }
 
 .k1 {
     position: absolute;
     width: 40px;
+    margin-left: 20px;
     left: 0;
     text-align: right;
 }
@@ -223,12 +223,18 @@ p {
 
 .k3 {
     visibility: hidden;
-    top: 25px;
-    position: absolute;
-    width: 25px;
+    margin-right: 20px;
     right: 0;
+    padding-left: 13px;
+    top: 20px;
+    height: 18px;
+    position: absolute;
+    width: 27px;
 }
 
+.deleteMarker {
+    visibility: hidden;
+}
 
 .messageConteiner:hover {
     background: #ffffed;
@@ -254,8 +260,13 @@ p {
     .search {
         width: 100%;
     }
-}
-
-.margin20 {
-    margin: 20px;
+    .messageConteiner {
+        padding: 10px 0;
+    }
+    .k1 {
+        margin-left: 5px;
+    }
+    .k3 {
+        margin-right: 5px;
+    }
 }

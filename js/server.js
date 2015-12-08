@@ -17,6 +17,7 @@ var server = http.createServer(function(req, res) {
         getHandler(req, res);
         return;
     }
+
     if (req.method == 'POST') {
         postHandler(req, res);
         return;

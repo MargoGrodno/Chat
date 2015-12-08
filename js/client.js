@@ -1,4 +1,4 @@
-var ip = '192.168.0.103';
+var ip = '192.168.0.105';
 var port = '31337';
 
 var uniqueId = function() {
@@ -12,7 +12,7 @@ var generalId = uniqueId();
 
 var appState = {
     user: 'Guest_' + generalId,
-    id: generalId,
+    userId: generalId,
     mainUrl: ip + ':' + port,
     token: 0
 };
@@ -55,8 +55,15 @@ function get(url, continueWith, continueWithError) {
 }
 
 function post(url, data, continueWith, continueWithError) {
-    console.log("post: " + data);
     ajax('POST', url, data, continueWith, continueWithError);
+}
+
+function put(url, data, continueWith, continueWithError) {
+    ajax('PUT', url, data, continueWith, continueWithError);
+}
+
+function del(url, data, continueWith, continueWithError) {
+    ajax('DELETE', url, data, continueWith, continueWithError);
 }
 
 function defaultErrorHandler(message) {
@@ -141,17 +148,48 @@ function updateHistory(newMessages) {
         addMessageInternal(newMessages[i]);
 }
 
+function takeRightIcon(userId) {
+    var iconCite = '<i class="fa fa-arrow-right"></i>';
+    var iconDelete = '<i class="fa fa-trash"></i>';
+
+    if (userId == appState.userId) {
+        return iconDelete;
+    } else {
+        return iconCite;
+    }
+}
+
 function addMessageInternal(message) {
     var tmplMessage = _.template(document.getElementById('list-template').innerHTML);
+
     var resultMessageDiv = tmplMessage({
         time: getHourMinutes(message.date),
         name: message.user,
         text: message.text,
-        id: message.msgId
+        id: message.msgId,
+        icon: takeRightIcon(message.userId)
     });
 
     $("#history").append(resultMessageDiv);
     scrollHistoryBottom();
+
+    if (message.userId == appState.userId) {
+        $("#" + message.msgId + " > .k3").on("click", function() {
+            deleteMessage(message.msgId);
+        });
+    }
+}
+
+function deleteMessage(messageId) {
+    //put('http://' + appState.mainUrl, JSON.stringify({id: messageId}), function() {
+    //    console.log("put req");
+    //});
+    markMsgAsDeleted(messageId);
+}
+
+function markMsgAsDeleted (messageId) {
+    $("#" + messageId + " > .k2 > .text").text("(*deleted*)");
+    $("#" + messageId + " > .k1 > .deleteMarker").css("visibility", "visible");
 }
 
 function addEventListerers() {
@@ -166,6 +204,7 @@ function addEventListerers() {
     onEnterPressed($("#nameField"), onChangeNameButtonClick);
     $("#changeNameButton").on("click", onChangeNameButtonClick);
     $("#cancelNameButton").on("click", closeNamePopup);
+
 }
 
 function openChangeServerPopup() {
@@ -210,7 +249,7 @@ function scrollHistoryBottom() {
 var theMessage = function(text) {
     var date = new Date();
     return {
-        id: appState.id,
+        userId: appState.userId,
         user: appState.user,
         date: date.getTime(),
         text: text
