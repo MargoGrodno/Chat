@@ -41,7 +41,7 @@ function getHandler(req, res) {
     if (isFutureToken(token)) {
         var body = {
             token: token
-        }; //[token, null];
+        };
         responseWith(res, 401, "post", body);
         return;
     }
@@ -50,7 +50,7 @@ function getHandler(req, res) {
         var body = {
             token: history.length,
             messages: messages
-        }; //[history.length, messages];
+        };
         responseWith(res, 200, "post", body);
         return;
     }
@@ -93,7 +93,6 @@ function putHandler(req, res) {
 
 function deleteHandler(req, res) {
     onDataComplete(req, function(message) {
-        console.log(message);
 
         markMsgAsDeleted(message.id);
         deleteMsgForAll(message.id);
@@ -109,7 +108,7 @@ function deleteMsgForAll(msgId) {
     toBeResponded.forEach(function(waiter) {
         var body = {
             msgId: msgId
-        }; // [-1, msgId];
+        };
         responseWith(waiter.res, 200, "delete", body);
         waiter.res.end();
     });
@@ -151,7 +150,7 @@ function answerAll() {
         var body = {
             token: history.length,
             messages: history.slice(token, history.length)
-        }; //[history.length, history.slice(token, history.length)];
+        };
         responseWith(waiter.res, 200, "post", body);
         waiter.res.end();
     });
@@ -162,24 +161,10 @@ function responseWith(response, statusCode, method, body) {
     response.writeHeader(statusCode, {
         'Access-Control-Allow-Origin': '*'
     });
-    //var token = body[0];
-    //var messages = body[1];
-
-    if (method == "post") {
-        response.write(JSON.stringify({
-            method: method,
-            //token: token,
-            //messages: messages
-            body: body
-        }));
-    }
-    if (method == "delete") {
-        response.write(JSON.stringify({
-            method: method,
-            //msgId: messages
-            body: body
-        }));
-    }
+    response.write(JSON.stringify({
+        method: method,
+        body: body
+    }));
     response.end();
 }
 
