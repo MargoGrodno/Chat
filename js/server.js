@@ -11,15 +11,26 @@ var ip = getIp();
 var port = 31337;
 
 var server = http.createServer(function(req, res) {
-    console.log('method: ' + req.method);
+    console.log('method: ' + req.method + ", " + req.url);
 
+    if (req.method == 'OPTIONS') {
+        optionsHandler(req, res);
+        return;
+    }
     if (req.method == 'GET') {
         getHandler(req, res);
         return;
     }
-
     if (req.method == 'POST') {
         postHandler(req, res);
+        return;
+    }
+    if (req.method == 'PUT') {
+        putHandler(req, res);
+        return;
+    }
+    if (req.method == 'DELETE') {
+        deleteHandler(req, res);
         return;
     }
 });
@@ -28,13 +39,19 @@ function getHandler(req, res) {
     var token = getToken(req.url);
 
     if (isFutureToken(token)) {
-        responseWith(res, 401, token, null);
+        var body = {
+            token: token
+        }; //[token, null];
+        responseWith(res, 401, "post", body);
         return;
     }
-
     if (isPastToken(token)) {
         var messages = history.slice(token, history.length);
-        responseWith(res, 200, history.length, messages);
+        var body = {
+            token: history.length,
+            messages: messages
+        }; //[history.length, messages];
+        responseWith(res, 200, "post", body);
         return;
     }
 
@@ -44,6 +61,71 @@ function getHandler(req, res) {
         res: res,
         token: token
     });
+}
+
+function postHandler(req, res) {
+    onDataComplete(req, function(message) {
+        message.msgId = uniqueId();
+        message.isDeleted = false;
+
+        history.push(message);
+        answerAll();
+
+        res.writeHeader(200, {
+            'Access-Control-Allow-Origin': '*'
+        });
+        res.end();
+    });
+}
+
+function optionsHandler(req, res) {
+    res.writeHeader(200, {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE',
+        'Access-Control-Allow-Headers': 'Content-Type'
+    });
+    res.end("");
+}
+
+function putHandler(req, res) {
+    console.log("put");
+}
+
+function deleteHandler(req, res) {
+    onDataComplete(req, function(message) {
+        console.log(message);
+
+        markMsgAsDeleted(message.id);
+        deleteMsgForAll(message.id);
+
+        res.writeHeader(200, {
+            'Access-Control-Allow-Origin': '*'
+        });
+        res.end();
+    });
+}
+
+function deleteMsgForAll(msgId) {
+    toBeResponded.forEach(function(waiter) {
+        var body = {
+            msgId: msgId
+        }; // [-1, msgId];
+        responseWith(waiter.res, 200, "delete", body);
+        waiter.res.end();
+    });
+    toBeResponded = [];
+}
+
+function markMsgAsDeleted(msgId) {
+    var numRequiredMsq;
+    for (var i = history.length - 1; i >= 0; i--) {
+        if (history[i].msgId == msgId) {
+            numRequiredMsq = i;
+        }
+    };
+
+    history[numRequiredMsq].text = "(*deleted*)";
+    history[numRequiredMsq].isDeleted = true;
 }
 
 function getToken(u) {
@@ -66,49 +148,50 @@ function isFutureToken(token) {
 function answerAll() {
     toBeResponded.forEach(function(waiter) {
         var token = waiter.token;
-        responseWith(waiter.res, 200, history.length, history.slice(token, history.length));
+        var body = {
+            token: history.length,
+            messages: history.slice(token, history.length)
+        }; //[history.length, history.slice(token, history.length)];
+        responseWith(waiter.res, 200, "post", body);
         waiter.res.end();
     });
     toBeResponded = [];
 }
 
-function responseWith(response, statusCode, token, messages) {
+function responseWith(response, statusCode, method, body) {
     response.writeHeader(statusCode, {
         'Access-Control-Allow-Origin': '*'
     });
-    if (messages != null) {
+    //var token = body[0];
+    //var messages = body[1];
 
+    if (method == "post") {
         response.write(JSON.stringify({
-            token: token,
-            messages: messages
+            method: method,
+            //token: token,
+            //messages: messages
+            body: body
         }));
-    };
+    }
+    if (method == "delete") {
+        response.write(JSON.stringify({
+            method: method,
+            //msgId: messages
+            body: body
+        }));
+    }
     response.end();
 }
 
-function postHandler(req, res) {
-    onDataComplete(req, function(message) {
-        message.msgId = uniqueId();
-        console.log("post message: " +
-            message.user + ", " + message.text + ", " +
-            getHourMinutes(message.date) + ", " + message.msgId);
-        history.push(message);
-        answerAll();
-        res.writeHeader(200, {
-            'Access-Control-Allow-Origin': '*'
-        });
-        res.end();
-    });
-}
 
 function onDataComplete(req, handler) {
-    var message = '';
+    var reqBody = '';
     req.on('data', function(data) {
-        message += data.toString();
+        reqBody += data.toString();
     });
 
     req.on('end', function() {
-        handler(JSON.parse(message));
+        handler(JSON.parse(reqBody));
     });
 }
 

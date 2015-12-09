@@ -32,14 +32,24 @@ function doPolling() {
         isExpectRes = true;
 
         get(url, function(responseText) {
-            if (isExpectRes && (appState.mainUrl == requestUrl)) {
-                $("#offline").hide("slow");
-                var response = JSON.parse(responseText);
-                appState.token = response.token;
-                updateHistory(response.messages);
-                setTimeout(loop, 1000);
-                isExpectRes = false;
+            var response = JSON.parse(responseText);
+            
+            if (response.method == "post") {
+                if (isExpectRes && (appState.mainUrl == requestUrl)) {
+                    $("#offline").hide("slow");
+                    appState.token = response.body.token;
+                    updateHistory(response.body.messages);
+                    setTimeout(loop, 1000);
+                    isExpectRes = false;
+                }
+                return;
             }
+            if(response.method == "delete"){
+                markMsgAsDeleted(response.body.msgId);
+                setTimeout(loop, 1000);
+                return;
+            }
+            defaultErrorHandler("unhandle response");
         }, function(error) {
             console.log(error);
             defaultErrorHandler(error);
@@ -178,16 +188,23 @@ function addMessageInternal(message) {
             deleteMessage(message.msgId);
         });
     }
+
+    if (message.isDeleted) {
+        markMsgAsDeleted(message.msgId);
+    }
 }
 
 function deleteMessage(messageId) {
-    //put('http://' + appState.mainUrl, JSON.stringify({id: messageId}), function() {
-    //    console.log("put req");
-    //});
-    markMsgAsDeleted(messageId);
+    del('http://' + appState.mainUrl + '/' + messageId, JSON.stringify({
+        id: messageId
+    }), function(error) {
+            console.log(error);
+            defaultErrorHandler(error);
+    });
+
 }
 
-function markMsgAsDeleted (messageId) {
+function markMsgAsDeleted(messageId) {
     $("#" + messageId + " > .k2 > .text").text("(*deleted*)");
     $("#" + messageId + " > .k1 > .deleteMarker").css("visibility", "visible");
 }
