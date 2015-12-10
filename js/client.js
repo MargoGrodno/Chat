@@ -33,7 +33,7 @@ function doPolling() {
 
         get(url, function(responseText) {
             var response = JSON.parse(responseText);
-            
+
             if (response.method == "post") {
                 if (isExpectRes && (appState.mainUrl == requestUrl)) {
                     $("#offline").hide("slow");
@@ -44,7 +44,7 @@ function doPolling() {
                 }
                 return;
             }
-            if(response.method == "delete"){
+            if (response.method == "delete") {
                 markMsgAsDeleted(response.body.msgId);
                 setTimeout(loop, 1000);
                 return;
@@ -153,20 +153,17 @@ function sendMessage(message, continueWith) {
     });
 }
 
+function deleteMessage(messageId, continueWith) {
+    del('http://' + appState.mainUrl + '/' + messageId, JSON.stringify({
+        id: messageId
+    }), function() {
+        continueWith && continueWith();
+    });
+}
+
 function updateHistory(newMessages) {
     for (var i = 0; i < newMessages.length; i++)
         addMessageInternal(newMessages[i]);
-}
-
-function takeRightIcon(userId) {
-    var iconCite = '<i class="fa fa-arrow-right"></i>';
-    var iconDelete = '<i class="fa fa-trash"></i>';
-
-    if (userId == appState.userId) {
-        return iconDelete;
-    } else {
-        return iconCite;
-    }
 }
 
 function addMessageInternal(message) {
@@ -176,32 +173,30 @@ function addMessageInternal(message) {
         time: getHourMinutes(message.date),
         name: message.user,
         text: message.text,
-        id: message.msgId,
-        icon: takeRightIcon(message.userId)
+        id: message.msgId
     });
 
     $("#history").append(resultMessageDiv);
     scrollHistoryBottom();
+    addBtnsForMsg(message);
+}
 
+function addBtnsForMsg (message) {
     if (message.userId == appState.userId) {
-        $("#" + message.msgId + " > .k3").on("click", function() {
-            deleteMessage(message.msgId);
+        $("#" + message.msgId + " > .k3 > .editBtn").css("display", "block");
+        $("#" + message.msgId + " > .k3 > .deleteBtn").css("display", "block");
+        $("#" + message.msgId + " > .k3 > .deleteBtn").on("click", function() {
+            deleteMessage(message.msgId, function() {
+                console.log('Message deleted ' + message.msgId);
+            });
         });
+    } else {
+        $("#" + message.msgId + " > .k3 > .citeBtn").css("display", "block");
     }
 
     if (message.isDeleted) {
         markMsgAsDeleted(message.msgId);
     }
-}
-
-function deleteMessage(messageId) {
-    del('http://' + appState.mainUrl + '/' + messageId, JSON.stringify({
-        id: messageId
-    }), function(error) {
-            console.log(error);
-            defaultErrorHandler(error);
-    });
-
 }
 
 function markMsgAsDeleted(messageId) {

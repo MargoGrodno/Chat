@@ -94,13 +94,13 @@ function putHandler(req, res) {
 function deleteHandler(req, res) {
     onDataComplete(req, function(message) {
 
-        markMsgAsDeleted(message.id);
-        deleteMsgForAll(message.id);
-
         res.writeHeader(200, {
             'Access-Control-Allow-Origin': '*'
         });
         res.end();
+        markMsgAsDeleted(message.id);
+        deleteMsgForAll(message.id);
+
     });
 }
 

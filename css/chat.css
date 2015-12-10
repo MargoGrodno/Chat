@@ -226,10 +226,17 @@ p {
     margin-right: 20px;
     right: 0;
     padding-left: 13px;
-    top: 20px;
+    top: 3px;
     height: 18px;
     position: absolute;
     width: 27px;
+}
+
+.citeBtn,
+.editBtn,
+.deleteBtn,
+.revokeBtn {
+    display: none;
 }
 
 .deleteMarker {
