@@ -159,6 +159,7 @@ function deleteMessage(messageId, continueWith) {
     }), function() {
         continueWith && continueWith();
     });
+
 }
 
 function updateHistory(newMessages) {

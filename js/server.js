@@ -8,7 +8,6 @@ var history = [];
 var toBeResponded = [];
 
 var ip = getIp();
-var port = 31337;
 
 var server = http.createServer(function(req, res) {
     console.log('method: ' + req.method + ", " + req.url);
@@ -195,16 +194,15 @@ function uniqueId() {
     return Math.floor(date * random).toString();
 };
 
-function startServerOnArbitraryPort() {
+function startServerOnArbitraryPort(defaultPort) {
     takePortForStart(function(incomingPort) {
-        port = incomingPort;
-        startServer();
+        startServer(incomingPort);
     }, function() {
-        startServer();
+        startServer(defaultPort);
     });
 }
 
-function startServer() {
+function startServer(port) {
     server.listen(port, ip);
     server.setTimeout(0);
     console.log('Server running at http://' + ip + ':' + port);
@@ -240,4 +238,4 @@ function takePortForStart(succeed, failure) {
     });
 };
 
-startServerOnArbitraryPort();
+startServerOnArbitraryPort(31337);
