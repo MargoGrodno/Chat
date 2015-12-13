@@ -1,4 +1,4 @@
-var ip = '192.168.0.105';
+var ip = '192.168.0.102';
 var port = '31337';
 
 var uniqueId = function() {
@@ -7,14 +7,14 @@ var uniqueId = function() {
     return Math.floor(date * random).toString();
 };
 
-var isExpectRes = false;
 var generalId = uniqueId();
 
 var appState = {
     user: 'Guest_' + generalId,
     userId: generalId,
     mainUrl: ip + ':' + port,
-    token: 0
+    token: 0,
+    curentReq: null
 };
 
 function run() {
@@ -28,27 +28,23 @@ function doPolling() {
     function loop() {
         var url = 'http://' + appState.mainUrl + '?token=' + appState.token;
 
-        var requestUrl = appState.mainUrl;
-        isExpectRes = true;
-
         get(url, function(responseText) {
             var response = JSON.parse(responseText);
 
             if (response.method == "post") {
-                if (isExpectRes && (appState.mainUrl == requestUrl)) {
-                    $("#offline").hide("slow");
-                    appState.token = response.body.token;
-                    updateHistory(response.body.messages);
-                    setTimeout(loop, 1000);
-                    isExpectRes = false;
-                }
+                $("#offline").hide("slow");
+                appState.token = response.body.token;
+                updateHistory(response.body.messages);
+                setTimeout(loop, 1000);
                 return;
             }
+
             if (response.method == "delete") {
                 markMsgAsDeleted(response.body.msgId);
                 setTimeout(loop, 1000);
                 return;
             }
+
             defaultErrorHandler("unhandle response");
         }, function(error) {
             console.log(error);
@@ -98,6 +94,8 @@ function isError(text) {
 
 function ajax(method, url, data, continueWith, continueWithError) {
     var xhr = new XMLHttpRequest();
+        appState.curentReq = xhr;
+    
 
     continueWithError = continueWithError || defaultErrorHandler;
     xhr.open(method || 'GET', url, true);
@@ -121,7 +119,7 @@ function ajax(method, url, data, continueWith, continueWithError) {
 
     xhr.ontimeout = function() {
         сontinueWithError('Server timed out !');
-    }
+    };
 
     xhr.onerror = function(e) {
         var errMsg = 'Server connection error http://' + appState.mainUrl + '\n' +
@@ -143,7 +141,9 @@ window.onerror = function(err) {
 function changeServer(newAddress) {
     appState.mainUrl = newAddress;
     appState.token = 0;
+    appState.curentReq.abort();
     cleanHistory();
+
     doPolling();
 }
 
@@ -182,7 +182,7 @@ function addMessageInternal(message) {
     addBtnsForMsg(message);
 }
 
-function addBtnsForMsg (message) {
+function addBtnsForMsg(message) {
     if (message.userId == appState.userId) {
         $("#" + message.msgId + " > .k3 > .editBtn").css("display", "block");
         $("#" + message.msgId + " > .k3 > .deleteBtn").css("display", "block");
