@@ -1,33 +1,28 @@
-var hist = [];
+var states = [];
 
 function getToken() {
-    return this.hist.length;
+    return states.length;
 };
 
 function addMessage(message) {
-    this.hist.push(message);
+    states.push(message);
 };
 
 function getMessagesFrom(token) {
-    return this.hist.slice(token, this.hist.length);
+    return states.slice(token, states.length);
 };
 
 function markMsgAsDeleted(msgId) {
-    var numRequiredMsq;
-    for (var i = this.hist.length - 1; i >= 0; i--) {
-        if (this.hist[i].msgId == msgId) {
-            numRequiredMsq = i;
-            break;
-        }
-    };
-    this.hist[numRequiredMsq].text = "(*deleted*)";
-    this.hist[numRequiredMsq].isDeleted = true;
+    states.push({
+        msgId: msgId,
+        isDeleted: true
+    });
 };
 
 module.exports = {
-	hist: hist,
-	getMessagesFrom: getMessagesFrom,
-	getToken: getToken,
-	addMessage: addMessage,
-	markMsgAsDeleted:markMsgAsDeleted
+    hist: states,
+    getMessagesFrom: getMessagesFrom,
+    getToken: getToken,
+    addMessage: addMessage,
+    markMsgAsDeleted: markMsgAsDeleted
 };

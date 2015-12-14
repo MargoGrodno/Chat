@@ -39,13 +39,13 @@ function getHandler(req, res) {
     
     console.log("url token: "+ token);
     console.log("hist token: "+ history.getToken());
-    console.log("hist : "+ JSON.stringify( history.hist, null,2));
+    //console.log("hist : "+ JSON.stringify( history.hist, null,2));
     
     if (isFutureToken(token)) {
         var body = {
             token: token
         };
-        responseWith(res, 401, "post", body);
+        responseWith(res, 401, body);
         return;
     }
     if (isPastToken(token)) {
@@ -54,7 +54,7 @@ function getHandler(req, res) {
             token: history.getToken(),
             messages: messages
         };
-        responseWith(res, 200, "post", body);
+        responseWith(res, 200, body);
         return;
     }
 
@@ -102,8 +102,8 @@ function deleteHandler(req, res) {
         });
         res.end();
         history.markMsgAsDeleted(message.id);
-        deleteMsgForAll(message.id);
-
+        //deleteMsgForAll(message.id);
+        respondAll();
     });
 }
 
@@ -142,20 +142,18 @@ function respondAll() {
             token: history.getToken(),
             messages: history.getMessagesFrom(token) 
         };
-        responseWith(waiter.res, 200, "post", body);
+        responseWith(waiter.res, 200, body);
         waiter.res.end();
     });
     toBeResponded = [];
 }
 
-function responseWith(response, statusCode, method, body) {
+function responseWith(response, statusCode, body) {
+    console.log("respond body "+JSON.stringify(body, null, 2));
     response.writeHeader(statusCode, {
         'Access-Control-Allow-Origin': '*'
     });
-    response.write(JSON.stringify({
-        method: method,
-        body: body
-    }));
+    response.write(JSON.stringify(body));
     response.end();
 }
 

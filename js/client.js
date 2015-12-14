@@ -7,10 +7,8 @@ var uniqueId = function() {
     return Math.floor(date * random).toString();
 };
 
-var generalId = uniqueId();
-
 var appState = {
-    userName: 'Guest_' + generalId,
+    userName: 'Guest_' + uniqueId(),
     userId: uniqueId(),
     mainUrl: ip + ':' + port,
     token: 0,
@@ -28,20 +26,11 @@ function doPolling() {
 
         get(url, function(responseText) {
             var response = JSON.parse(responseText);
-
-            if (response.method == "post") {
-                $("#offline").hide("slow");
-                appState.token = response.body.token;
-                updateHistory(response.body.messages);
-                setTimeout(loop, 1000);
-                return;
-            }
-
-            if (response.method == "delete") {
-                markMsgAsDeleted(response.body.msgId);
-                setTimeout(loop, 1000);
-                return;
-            }
+            $("#offline").hide("slow");
+            appState.token = response.token;
+            updateHistory(response.messages);
+            setTimeout(loop, 1000);
+            return;
 
             defaultErrorHandler("unhandle response");
         }, function(error) {
@@ -139,7 +128,7 @@ function changeServer(newAddress) {
     appState.mainUrl = newAddress;
     appState.token = 0;
     appState.curentReq.abort();
-    
+
     cleanHistory();
     doPolling();
 }
@@ -159,8 +148,13 @@ function deleteMessage(messageId, continueWith) {
 }
 
 function updateHistory(newMessages) {
-    for (var i = 0; i < newMessages.length; i++)
-        addMessageInternal(newMessages[i]);
+    for (var i = 0; i < newMessages.length; i++) {
+        if (newMessages[i].isDeleted) {
+            markMsgAsDeleted(newMessages[i].msgId);
+        } else {
+            addMessageInternal(newMessages[i]);
+        }
+    }
 }
 
 function addMessageInternal(message) {
@@ -174,6 +168,7 @@ function addMessageInternal(message) {
     });
 
     $("#history").append(resultMessageDiv);
+    
     scrollHistoryBottom();
     addBtnsForMsg(message);
 }
@@ -189,10 +184,6 @@ function addBtnsForMsg(message) {
         });
     } else {
         $("#" + message.msgId + " > .k3 > .citeBtn").css("display", "block");
-    }
-
-    if (message.isDeleted) {
-        markMsgAsDeleted(message.msgId);
     }
 }
 
@@ -238,7 +229,7 @@ function closeNamePopup() {
     $('#newMessageField').focus();
 }
 
-function onCloseNamePopupClick () {
+function onCloseNamePopupClick() {
     $("#username").text(appState.userName);
     closeNamePopup();
 }
