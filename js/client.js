@@ -168,7 +168,7 @@ function addMessageInternal(message) {
     });
 
     $("#history").append(resultMessageDiv);
-    
+
     scrollHistoryBottom();
     addBtnsForMsg(message);
 }
@@ -190,6 +190,9 @@ function addBtnsForMsg(message) {
 function markMsgAsDeleted(messageId) {
     $("#" + messageId + " > .k2 > .text").text("(*deleted*)");
     $("#" + messageId + " > .k1 > .deleteMarker").css("visibility", "visible");
+    $("#" + messageId + " > .k3 > .editBtn").css("display", "none");
+    $("#" + messageId + " > .k3 > .deleteBtn").css("display", "none");
+    $("#" + messageId + " > .k3 > .citeBtn").css("display", "none");
 }
 
 function addEventListerers() {
