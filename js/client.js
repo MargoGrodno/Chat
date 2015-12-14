@@ -10,16 +10,14 @@ var uniqueId = function() {
 var generalId = uniqueId();
 
 var appState = {
-    user: 'Guest_' + generalId,
-    userId: generalId,
+    userName: 'Guest_' + generalId,
+    userId: uniqueId(),
     mainUrl: ip + ':' + port,
     token: 0,
     curentReq: null
 };
 
 function run() {
-    $("#username").text(appState.user);
-
     addEventListerers();
     doPolling();
 }
@@ -94,8 +92,7 @@ function isError(text) {
 
 function ajax(method, url, data, continueWith, continueWithError) {
     var xhr = new XMLHttpRequest();
-        appState.curentReq = xhr;
-    
+    appState.curentReq = xhr;
 
     continueWithError = continueWithError || defaultErrorHandler;
     xhr.open(method || 'GET', url, true);
@@ -142,8 +139,8 @@ function changeServer(newAddress) {
     appState.mainUrl = newAddress;
     appState.token = 0;
     appState.curentReq.abort();
+    
     cleanHistory();
-
     doPolling();
 }
 
@@ -159,7 +156,6 @@ function deleteMessage(messageId, continueWith) {
     }), function() {
         continueWith && continueWith();
     });
-
 }
 
 function updateHistory(newMessages) {
@@ -172,7 +168,7 @@ function addMessageInternal(message) {
 
     var resultMessageDiv = tmplMessage({
         time: getHourMinutes(message.date),
-        name: message.user,
+        name: message.userName,
         text: message.text,
         id: message.msgId
     });
@@ -216,7 +212,7 @@ function addEventListerers() {
 
     onEnterPressed($("#nameField"), onChangeNameButtonClick);
     $("#changeNameButton").on("click", onChangeNameButtonClick);
-    $("#cancelNameButton").on("click", closeNamePopup);
+    $("#cancelNameButton").on("click", onCloseNamePopupClick);
 
 }
 
@@ -242,6 +238,11 @@ function closeNamePopup() {
     $('#newMessageField').focus();
 }
 
+function onCloseNamePopupClick () {
+    $("#username").text(appState.userName);
+    closeNamePopup();
+}
+
 function onEnterPressed(field, action) {
     field.keypress(function(e) {
         if (e.which == 13) {
@@ -263,7 +264,7 @@ var theMessage = function(text) {
     var date = new Date();
     return {
         userId: appState.userId,
-        user: appState.user,
+        userName: appState.userName,
         date: date.getTime(),
         text: text
     };
@@ -292,8 +293,8 @@ function onChangeNameButtonClick() {
 }
 
 function changeName(name) {
-    appState.user = name;
-    $("#username").text(appState.user);
+    appState.userName = name;
+    $("#username").text(appState.userName);
 }
 
 function onChangeServerButtonClick() {

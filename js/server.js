@@ -3,8 +3,8 @@ var util = require('util');
 var assert = require('assert');
 var url = require('url');
 var getIp = require('./getIp');
+var history = require('./history');
 
-var history = [];
 var toBeResponded = [];
 
 var ip = getIp();
@@ -36,7 +36,11 @@ var server = http.createServer(function(req, res) {
 
 function getHandler(req, res) {
     var token = getToken(req.url);
-
+    
+    console.log("url token: "+ token);
+    console.log("hist token: "+ history.getToken());
+    console.log("hist : "+ JSON.stringify( history.hist, null,2));
+    
     if (isFutureToken(token)) {
         var body = {
             token: token
@@ -45,9 +49,9 @@ function getHandler(req, res) {
         return;
     }
     if (isPastToken(token)) {
-        var messages = history.slice(token, history.length);
+        var messages = history.getMessagesFrom(token); 
         var body = {
-            token: history.length,
+            token: history.getToken(),
             messages: messages
         };
         responseWith(res, 200, "post", body);
@@ -67,8 +71,8 @@ function postHandler(req, res) {
         message.msgId = uniqueId();
         message.isDeleted = false;
 
-        history.push(message);
-        answerAll();
+        history.addMessage(message); 
+        respondAll();
 
         res.writeHeader(200, {
             'Access-Control-Allow-Origin': '*'
@@ -97,7 +101,7 @@ function deleteHandler(req, res) {
             'Access-Control-Allow-Origin': '*'
         });
         res.end();
-        markMsgAsDeleted(message.id);
+        history.markMsgAsDeleted(message.id);
         deleteMsgForAll(message.id);
 
     });
@@ -114,41 +118,29 @@ function deleteMsgForAll(msgId) {
     toBeResponded = [];
 }
 
-function markMsgAsDeleted(msgId) {
-    var numRequiredMsq;
-    for (var i = history.length - 1; i >= 0; i--) {
-        if (history[i].msgId == msgId) {
-            numRequiredMsq = i;
-        }
-    };
-
-    history[numRequiredMsq].text = "(*deleted*)";
-    history[numRequiredMsq].isDeleted = true;
-}
-
 function getToken(u) {
     var parts = url.parse(u, true);
     return parts.query.token;
 }
 
 function isPastToken(token) {
-    return token < history.length;
+    return token < history.getToken();
 }
 
 function isActualToken(token) {
-    return token == history.length;
+    return token == history.getToken();
 }
 
 function isFutureToken(token) {
-    return token > history.length
+    return token > history.getToken();
 }
 
-function answerAll() {
+function respondAll() {
     toBeResponded.forEach(function(waiter) {
         var token = waiter.token;
         var body = {
-            token: history.length,
-            messages: history.slice(token, history.length)
+            token: history.getToken(),
+            messages: history.getMessagesFrom(token) 
         };
         responseWith(waiter.res, 200, "post", body);
         waiter.res.end();
