@@ -56,6 +56,7 @@ function responseWith(response, statusCode, body) {
         'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE'
     });
     if (body) {
+        console.log(JSON.stringify(body, null, 2));
         response.write(JSON.stringify(body));
     }
     response.end();
@@ -115,14 +116,29 @@ function putHandler(req, res, continueWith) {
 
 function deleteHandler(req, res, continueWith) {
     awaitBody(req, function(message) {
-        history.deleteMsg(message.id, function(err) {
-            if (err) {
-                continueWith(err);
-            } else {
-                respondAll();
-                continueWith();
-            }
-        });
+        if (message.method == "delete") {
+            history.deleteMsg(message.id, function(err) {
+                if (err) {
+                    continueWith(err);
+                } else {
+                    respondAll();
+                    continueWith();
+                }
+            });
+            return;
+        }
+        if (message.method == "rollback") {
+            history.rollback(message.id, function(err) {
+                if (err) {
+                    continueWith(err);
+                } else {
+                    respondAll();
+                    continueWith();
+                }
+            });
+            return;
+        }
+
     });
 }
 

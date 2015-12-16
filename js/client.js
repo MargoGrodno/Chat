@@ -91,7 +91,7 @@ function ajax(method, url, data, continueWith, continueWithError) {
             return;
 
         if (xhr.status != 200) {
-            continueWithError('Error on the server side, response ' + xhr.status);
+            continueWithError('Error on the server side, response ' + xhr.status + ", " + xhr.responseText);
             return;
         }
 
@@ -141,17 +141,38 @@ function sendMessage(message, continueWith) {
 
 function deleteMessage(messageId, continueWith) {
     del('http://' + appState.mainUrl + '/' + messageId, JSON.stringify({
-        id: messageId
+        id: messageId,
+        method: "delete"
+    }), function() {
+        continueWith && continueWith();
+    });
+}
+
+function rollbackMessage(messageId, continueWith) {
+    del('http://' + appState.mainUrl + '/' + messageId, JSON.stringify({
+        id: messageId,
+        method: "rollback"
     }), function() {
         continueWith && continueWith();
     });
 }
 
 function updateHistory(newMessages) {
+    console.log(JSON.stringify(newMessages, null, 2))
     for (var i = 0; i < newMessages.length; i++) {
-        if (newMessages[i].isDeleted) {
+        if (newMessages[i].action == "delete") {
             markMsgAsDeleted(newMessages[i].msgId);
-        } else {
+        }
+        if (newMessages[i].action == "revoke") {
+            console.log("rollback come in res "+ newMessages[i].revokingAction )
+            if(newMessages[i].revokingAction == "delete"){
+                $("#" + newMessages[i].msgId + " > .k2 > .text").text( newMessages[i].text);        
+            }
+            if(newMessages[i].revokingAction == "add"){
+                $("#" + newMessages[i].msgId).remove();        
+            }
+        }
+        if (newMessages[i].action == "add") {
             addMessageInternal(newMessages[i]);
         }
     }
@@ -182,6 +203,11 @@ function addBtnsForMsg(message) {
                 console.log('Message deleted ' + message.msgId);
             });
         });
+        $("#" + message.msgId + " > .k3 > .revokeBtn").on("click", function() {
+            rollbackMessage(message.msgId, function() {
+                console.log('Message rollback ' + message.msgId);
+            });
+        });
     } else {
         $("#" + message.msgId + " > .k3 > .citeBtn").css("display", "block");
     }
@@ -207,8 +233,8 @@ function addEventListerers() {
     onEnterPressed($("#nameField"), onChangeNameButtonClick);
     $("#changeNameButton").on("click", onChangeNameButtonClick);
     $("#cancelNameButton").on("click", onCloseNamePopupClick);
-
 }
+
 
 function openChangeServerPopup() {
     $('#curentServer').text(appState.mainUrl);

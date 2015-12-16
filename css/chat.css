@@ -26,7 +26,7 @@ p {
 }
 
 #username {
-    width: 150px;
+    width: 145px;
     float: left;
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
@@ -42,7 +42,7 @@ p {
     max-width: 320px;
     font-size: 0;
     float: right;
-    width: calc(100% - 150px);
+    width: calc(100% - 145px);
     padding: 13px 0 13px 0;
     display: inline-block;
 }
@@ -58,7 +58,7 @@ p {
 
 .searchField {
     min-width: 100px;
-    width: calc(100% - 61px);
+    width: calc(100% - 56px);
 }
 
 .popupField {
@@ -93,7 +93,7 @@ p {
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
     box-sizing: border-box;
-    margin-left: 13px;
+    margin-left: 8px;
     height: 24px;
     width: 24px;
     padding: 0;
@@ -234,8 +234,7 @@ p {
 
 .citeBtn,
 .editBtn,
-.deleteBtn,
-.revokeBtn {
+.deleteBtn {
     display: none;
 }
 
