@@ -36,15 +36,13 @@ function deleteMsg(msgId, continueWith) { // Проверить, возможн�
 };
 
 function takeLastUnrevokeState(msgId) {
-    var z = takeLastUnrevokeStateBefore(msgId, states.length);
-    return z;
+    return takeLastUnrevokeStateBefore(msgId, states.length);
 }
 
 function takeLastUnrevokeStateBefore(msgId, indexBefore) {
     var indLastState = indexLastMsgStateBefore(msgId, indexBefore);
     if (states[indLastState].action == "revoke") {
-        var  g = takeLastUnrevokeStateBefore(msgId, states[indLastState].rollbackState);
-        return g;
+        return takeLastUnrevokeStateBefore(msgId, states[indLastState].rollbackState);
     } else {
         return indLastState;
     }
@@ -60,44 +58,43 @@ function indexLastMsgStateBefore(msgId, indexFrom) {
 }
 
 function rollback(msgId, continueWith) {
-	if (!isExist(msgId)) {
+    if (!isExist(msgId)) {
         continueWith("Rollback non-existent message");
         return;
     }
-
     var indLastUnrSt = takeLastUnrevokeState(msgId);
 
     if (indLastUnrSt == -1) {
         continueWith("Nothing for rollback");
         return;
     }
+    var revocableState = states[indLastUnrSt];
 
-    var rollbackState = states[indLastUnrSt];
+    var newState = {
+        msgId: msgId,
+        userId: getUserIdByMsgId(msgId),
+        action: "revoke",
+        revocableAction: revocableState.action,
+        rollbackState: indLastUnrSt
+    };
 
-    if (rollbackState.action == "add") {
-        states.push({
-            msgId: rollbackState.msgId,
-            action: "revoke",
-            revokingAction: "add",
-            rollbackState: indLastUnrSt
-        });
-        continueWith();
-    }
-
-    if (rollbackState.action == "delete") {
-
+    if (revocableState.action == "delete") {
         var indStateBeforeDelete = takeLastUnrevokeStateBefore(msgId, indLastUnrSt);
-        var oldText = states[indStateBeforeDelete].text;
-
-        states.push({
-            msgId: rollbackState.msgId,
-            action: "revoke",
-            revokingAction: "delete",
-            rollbackState: indLastUnrSt,
-            text: oldText
-        });
-        continueWith();
+        var oldText = states[indStateBeforeDelete].text;        
+        newState.text = oldText;
     }
+
+    states.push(newState);
+    continueWith();
+}
+
+function getUserIdByMsgId (msgId) {
+	for (var i = 0; i < states.length; i++) {
+		if(states[i].msgId == msgId){
+			return states[i].userId;
+		}
+	};
+	return -1;
 }
 
 function isExist(msgId) {

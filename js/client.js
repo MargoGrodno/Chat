@@ -158,22 +158,34 @@ function rollbackMessage(messageId, continueWith) {
 }
 
 function updateHistory(newMessages) {
-    console.log(JSON.stringify(newMessages, null, 2))
     for (var i = 0; i < newMessages.length; i++) {
         if (newMessages[i].action == "delete") {
             markMsgAsDeleted(newMessages[i].msgId);
         }
         if (newMessages[i].action == "revoke") {
-            console.log("rollback come in res "+ newMessages[i].revokingAction )
-            if(newMessages[i].revokingAction == "delete"){
-                $("#" + newMessages[i].msgId + " > .k2 > .text").text( newMessages[i].text);        
-            }
-            if(newMessages[i].revokingAction == "add"){
-                $("#" + newMessages[i].msgId).remove();        
-            }
+            showRevokeMsg(newMessages[i]);
         }
         if (newMessages[i].action == "add") {
             addMessageInternal(newMessages[i]);
+        }
+    }
+}
+
+function showRevokeMsg(message) {
+    var msgId = message.msgId;
+    
+    if (message.revocableAction == "add") {
+        $("#" + msgId).remove();
+    }
+    if (message.revocableAction == "delete") {
+        var oldText = message.text;
+        $("#" + msgId + " > .k2 > .text").text(oldText);
+        $("#" + msgId + " > .k1 > .deleteMarker").css("visibility", "hidden");
+        if (message.userId == appState.userId) {
+            $("#" + msgId + " > .k3 > .editBtn").css("display", "block");
+            $("#" + msgId + " > .k3 > .deleteBtn").css("display", "block");
+        } else {
+            $("#" + msgId + " > .k3 > .citeBtn").css("display", "block");
         }
     }
 }
@@ -197,17 +209,21 @@ function addMessageInternal(message) {
 function addBtnsForMsg(message) {
     if (message.userId == appState.userId) {
         $("#" + message.msgId + " > .k3 > .editBtn").css("display", "block");
+
         $("#" + message.msgId + " > .k3 > .deleteBtn").css("display", "block");
         $("#" + message.msgId + " > .k3 > .deleteBtn").on("click", function() {
             deleteMessage(message.msgId, function() {
                 console.log('Message deleted ' + message.msgId);
             });
         });
+
+        $("#" + message.msgId + " > .k3 > .revokeBtn").css("display", "block");
         $("#" + message.msgId + " > .k3 > .revokeBtn").on("click", function() {
             rollbackMessage(message.msgId, function() {
                 console.log('Message rollback ' + message.msgId);
             });
         });
+
     } else {
         $("#" + message.msgId + " > .k3 > .citeBtn").css("display", "block");
     }

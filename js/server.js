@@ -56,7 +56,6 @@ function responseWith(response, statusCode, body) {
         'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE'
     });
     if (body) {
-        console.log(JSON.stringify(body, null, 2));
         response.write(JSON.stringify(body));
     }
     response.end();
@@ -138,7 +137,6 @@ function deleteHandler(req, res, continueWith) {
             });
             return;
         }
-
     });
 }
 

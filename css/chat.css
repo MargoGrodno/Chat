@@ -234,7 +234,8 @@ p {
 
 .citeBtn,
 .editBtn,
-.deleteBtn {
+.deleteBtn,
+.revokeBtn {
     display: none;
 }
 
