@@ -1,48 +1,58 @@
-var states = [];
+var operations = [];
 
 function getToken() {
-    return states.length;
+    return operations.length;
 };
 
 function getMessagesFrom(token) {
-    return states.slice(token, states.length);
+    return operations.slice(token, operations.length);
 };
 
 function addMessage(message, continueWith) {
-    states.push({
+    operations.push({
         msgId: uniqueId(),
         action: "add",
         userId: message.userId,
         userName: message.userName,
         date: message.date,
-        text: message.text,
-        isDeleted: false,
+        text: message.text
     });
     continueWith();
 };
 
-function deleteMsg(msgId, continueWith) { // Проверить, возможно сообщение уже удалено. Тогда ошибка.
+function deleteMsg(message, continueWith) { // Проверить, возможно сообщение уже удалено. Тогда ошибка.
+    var msgId = message.id;
+
+    if (message.method == "rollback") {
+        rollback(message.id, continueWith);
+        return;
+    }
+
+    if (message.method !== "delete") {
+        continueWith("unsuported delete method");
+        return;
+    }
+
     if (!isExist(msgId)) {
         continueWith("Deleting non-existent message");
         return;
     }
 
-    states.push({
+    operations.push({
         msgId: msgId,
-        isDeleted: true,
         action: "delete"
     });
     continueWith();
 };
 
 function takeLastUnrevokeState(msgId) {
-    return takeLastUnrevokeStateBefore(msgId, states.length);
+    return takeLastUnrevokeStateBefore(msgId, operations.length);
 }
 
 function takeLastUnrevokeStateBefore(msgId, indexBefore) {
     var indLastState = indexLastMsgStateBefore(msgId, indexBefore);
-    if (states[indLastState].action == "revoke") {
-        return takeLastUnrevokeStateBefore(msgId, states[indLastState].rollbackState);
+    if (operations[indLastState].action == "revoke") {
+        return takeLastUnrevokeStateBefore(msgId, operations[indLastState].rollbackState);
     } else {
         return indLastState;
     }
@@ -50,7 +60,7 @@ function takeLastUnrevokeStateBefore(msgId, indexBefore) {
 
 function indexLastMsgStateBefore(msgId, indexFrom) {
     for (var i = indexFrom - 1; i >= 0; i--) {
-        if (states[i].msgId == msgId) {
+        if (operations[i].msgId == msgId) {
             return (i);
         }
     };
@@ -68,7 +78,7 @@ function rollback(msgId, continueWith) {
         continueWith("Nothing for rollback");
         return;
     }
-    var revocableState = states[indLastUnrSt];
+    var revocableState = operations[indLastUnrSt];
 
     var newState = {
         msgId: msgId,
@@ -80,26 +90,26 @@ function rollback(msgId, continueWith) {
 
     if (revocableState.action == "delete") {
         var indStateBeforeDelete = takeLastUnrevokeStateBefore(msgId, indLastUnrSt);
-        var oldText = states[indStateBeforeDelete].text;        
+        var oldText = operations[indStateBeforeDelete].text;
         newState.text = oldText;
     }
 
-    states.push(newState);
+    operations.push(newState);
     continueWith();
 }
 
-function getUserIdByMsgId (msgId) {
-	for (var i = 0; i < states.length; i++) {
-		if(states[i].msgId == msgId){
-			return states[i].userId;
-		}
-	};
-	return -1;
+function getUserIdByMsgId(msgId) {
+    for (var i = 0; i < operations.length; i++) {
+        if (operations[i].msgId == msgId) {
+            return operations[i].userId;
+        }
+    };
+    return -1;
 }
 
 function isExist(msgId) {
-    for (var i = states.length - 1; i >= 0; i--) {
-        if (states[i].msgId == msgId) {
+    for (var i = operations.length - 1; i >= 0; i--) {
+        if (operations[i].msgId == msgId) {
             return true;
         }
     };
@@ -112,10 +122,25 @@ function uniqueId() {
     return Math.floor(date * random).toString();
 };
 
+function isPastToken(token) {
+    return token < getToken();
+}
+
+function isActualToken(token) {
+    return token == getToken();
+}
+
+function isFutureToken(token) {
+    return token > getToken();
+}
+
 module.exports = {
     getMessagesFrom: getMessagesFrom,
     getToken: getToken,
     addMessage: addMessage,
     deleteMsg: deleteMsg,
-    rollback: rollback
+    rollback: rollback,
+    isPastToken: isPastToken,
+    isActualToken: isActualToken,
+    isFutureToken: isFutureToken
 };

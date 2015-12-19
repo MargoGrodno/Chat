@@ -62,17 +62,17 @@ function responseWith(response, statusCode, body) {
 }
 
 function getHandler(req, res) {
-    var token = getUrlToken(req.url);
+    var urlToken = getUrlToken(req.url);
 
-    if (isFutureToken(token)) {
+    if (history.isFutureToken(urlToken)) {
         var body = {
-            token: token
+            token: urlToken
         };
         responseWith(res, 422, body);
         return;
     }
-    if (isPastToken(token)) {
-        var messages = history.getMessagesFrom(token);
+    if (history.isPastToken(urlToken)) {
+        var messages = history.getMessagesFrom(urlToken);
         var body = {
             token: history.getToken(),
             messages: messages
@@ -80,12 +80,12 @@ function getHandler(req, res) {
         responseWith(res, 200, body);
         return;
     }
-    console.assert(isActualToken(token));
+    console.assert(history.isActualToken(urlToken));
 
-    remaneWait(res, token);
+    remaineWait(res, urlToken);
 }
 
-function remaneWait(res, token) {
+function remaineWait(res, token) {
     toBeResponded.push({
         res: res,
         token: token
@@ -115,41 +115,16 @@ function putHandler(req, res, continueWith) {
 
 function deleteHandler(req, res, continueWith) {
     awaitBody(req, function(message) {
-        if (message.method == "delete") {
-            history.deleteMsg(message.id, function(err) {
-                if (err) {
-                    continueWith(err);
-                } else {
-                    respondAll();
-                    continueWith();
-                }
-            });
-            return;
-        }
-        if (message.method == "rollback") {
-            history.rollback(message.id, function(err) {
-                if (err) {
-                    continueWith(err);
-                } else {
-                    respondAll();
-                    continueWith();
-                }
-            });
-            return;
-        }
+        history.deleteMsg(message, function(err) {
+            if (err) {
+                continueWith(err);
+            } else {
+                respondAll();
+                continueWith();
+            }
+        });
+        return;
     });
-}
-
-function isPastToken(token) {
-    return token < history.getToken();
-}
-
-function isActualToken(token) {
-    return token == history.getToken();
-}
-
-function isFutureToken(token) {
-    return token > history.getToken();
 }
 
 function respondAll() {

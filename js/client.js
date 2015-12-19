@@ -12,7 +12,7 @@ var appState = {
     userId: uniqueId(),
     mainUrl: ip + ':' + port,
     token: 0,
-    curentReq: null
+    abortFn: null
 };
 
 function run() {
@@ -44,7 +44,7 @@ function doPolling() {
 }
 
 function get(url, continueWith, continueWithError) {
-    ajax('GET', url, null, continueWith, continueWithError);
+    appState.abortFn = ajax('GET', url, null, continueWith, continueWithError);
 }
 
 function post(url, data, continueWith, continueWithError) {
@@ -81,8 +81,7 @@ function isError(text) {
 
 function ajax(method, url, data, continueWith, continueWithError) {
     var xhr = new XMLHttpRequest();
-    appState.curentReq = xhr;
-
+    
     continueWithError = continueWithError || defaultErrorHandler;
     xhr.open(method || 'GET', url, true);
 
@@ -118,6 +117,11 @@ function ajax(method, url, data, continueWith, continueWithError) {
     };
 
     xhr.send(data);
+
+    function abortFn() {
+        xhr.abort();            
+    }
+    return abortFn;
 }
 
 window.onerror = function(err) {
@@ -127,8 +131,7 @@ window.onerror = function(err) {
 function changeServer(newAddress) {
     appState.mainUrl = newAddress;
     appState.token = 0;
-    appState.curentReq.abort();
-
+    appState.abortFn();   
     cleanHistory();
     doPolling();
 }
@@ -173,7 +176,7 @@ function updateHistory(newMessages) {
 
 function showRevokeMsg(message) {
     var msgId = message.msgId;
-    
+
     if (message.revocableAction == "add") {
         $("#" + msgId).remove();
     }
