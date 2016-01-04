@@ -3,8 +3,9 @@ var util = require('util');
 var assert = require('assert');
 var url = require('url');
 var getIp = require('./getIp');
-var history = require('./history');
+var historyMod = require('./history');
 
+var history = new historyMod.history();
 var toBeResponded = [];
 
 var ip = getIp();
@@ -13,44 +14,42 @@ var server = http.createServer(function(req, res) {
     console.log('method: ' + req.method + ", " + req.url);
 
     if (req.method == 'GET') {
-        getHandler(req, res);
+        getHandler(req, res, function(statusCode, err) {
+            responseWith(res, statusCode, err);
+        });
         return;
     }
     if (req.method == 'OPTIONS') {
-        optionsHandler(req, res, function() {
-            sendResponse(res);
+        optionsHandler(req, res, function(statusCode, err) {
+            responseWith(res, statusCode, err);
         });
         return;
     }
     if (req.method == 'POST') {
-        postHandler(req, res, function(err) {
-            sendResponse(res, err);
+        postHandler(req, res, function(statusCode, err) {
+            responseWith(res, statusCode, err);
         });
         return;
     }
     if (req.method == 'PUT') {
-        putHandler(req, res, function(err) {
-            sendResponse(res, err);
+        putHandler(req, res, function(statusCode, err) {
+            responseWith(res, statusCode, err);
         });
         return;
     }
     if (req.method == 'DELETE') {
-        deleteHandler(req, res, function(err) {
-            sendResponse(res, err);
+        deleteHandler(req, res, function(statusCode, err) {
+            responseWith(res, statusCode, err);
         });
         return;
     }
+    responseWith(res, 501);
 });
 
-function sendResponse(res, err) {
-    if (err) {
-        responseWith(res, 422, err);
-        return;
-    }
-    responseWith(res, 200);
-}
-
 function responseWith(response, statusCode, body) {
+    if (!statusCode) {
+        statusCode = 200;
+    }
     response.writeHeader(statusCode, {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE'
@@ -61,14 +60,11 @@ function responseWith(response, statusCode, body) {
     response.end();
 }
 
-function getHandler(req, res) {
+function getHandler(req, res, continueWith) {
     var urlToken = getUrlToken(req.url);
 
     if (history.isFutureToken(urlToken)) {
-        var body = {
-            token: urlToken
-        };
-        responseWith(res, 422, body);
+        continueWith(422, "Wrong token");
         return;
     }
     if (history.isPastToken(urlToken)) {
@@ -77,26 +73,26 @@ function getHandler(req, res) {
             token: history.getToken(),
             messages: messages
         };
-        responseWith(res, 200, body);
+        continueWith(200, body);
         return;
     }
     console.assert(history.isActualToken(urlToken));
 
-    remaineWait(res, urlToken);
+    remaineWait(urlToken, continueWith);
 }
 
-function remaineWait(res, token) {
+function remaineWait(token, continueWith) {
     toBeResponded.push({
-        res: res,
-        token: token
+        token: token,
+        continueWith: continueWith
     });
 }
 
 function postHandler(req, res, continueWith) {
     awaitBody(req, function(message) {
-        history.addMessage(message, function(err) {
-            if (err) {
-                continueWith(err);
+        history.addMessage(message, function(statusCode, err) {
+            if (statusCode) {
+                continueWith(statusCode, err);
             } else {
                 respondAll();
                 continueWith();
@@ -111,13 +107,14 @@ function optionsHandler(req, res, continueWith) {
 
 function putHandler(req, res, continueWith) {
     console.log("put");
+    continueWith(501, "Unsuported method");
 }
 
 function deleteHandler(req, res, continueWith) {
     awaitBody(req, function(message) {
-        history.deleteMsg(message, function(err) {
-            if (err) {
-                continueWith(err);
+        history.deleteMsg(message, function(statusCode, err) {
+            if (statusCode) {
+                continueWith(statusCode, err);
             } else {
                 respondAll();
                 continueWith();
@@ -133,8 +130,7 @@ function respondAll() {
             token: history.getToken(),
             messages: history.getMessagesFrom(waiter.token)
         };
-        responseWith(waiter.res, 200, body);
-        waiter.res.end();
+        waiter.continueWith(200, body);
     });
     toBeResponded = [];
 }

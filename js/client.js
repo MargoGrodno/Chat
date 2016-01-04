@@ -1,4 +1,4 @@
-var ip = '192.168.0.102';
+var ip = '192.168.100.6';
 var port = '31337';
 
 var uniqueId = function() {

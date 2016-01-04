@@ -1,15 +1,32 @@
-var operations = [];
+'use strict';
 
-function getToken() {
-    return operations.length;
+function history() {
+	this.operations = [];
+	console.log("constructor run");
+}
+
+history.prototype.getToken = function () {
+    return this.operations.length;
 };
 
-function getMessagesFrom(token) {
-    return operations.slice(token, operations.length);
+history.prototype.getMessagesFrom= function (token) {
+    return this.operations.slice(token, this.operations.length);
 };
 
-function addMessage(message, continueWith) {
-    operations.push({
+history.prototype.isPastToken=  function (token)  {
+    return token < this.getToken();
+}
+
+history.prototype.isActualToken =  function (token) {
+    return token == this.getToken();
+}
+
+history.prototype.isFutureToken =  function (token) {
+    return token > this.getToken();
+}
+
+history.prototype.addMessage =  function (message, continueWith) {
+    this.operations.push({
         msgId: uniqueId(),
         action: "add",
         userId: message.userId,
@@ -20,96 +37,94 @@ function addMessage(message, continueWith) {
     continueWith();
 };
 
-function deleteMsg(message, continueWith) { // Проверить, возможно сообщение уже удалено. Тогда ошибка.
+history.prototype.deleteMsg=  function (message, continueWith) { // Проверить, возможно сообщение уже удалено. Тогда ошибка.
     var msgId = message.id;
 
     if (message.method == "rollback") {
-        rollback(message.id, continueWith);
+        this.rollback(message.id, continueWith);
         return;
     }
-
     if (message.method !== "delete") {
-        continueWith("unsuported delete method");
+        continueWith(400, "unsuported operation");
         return;
     }
-
-    if (!isExist(msgId)) {
-        continueWith("Deleting non-existent message");
+    if (!this.isExist(msgId)) {
+        continueWith(422, "Deleting non-existent message");
         return;
-    }
+    } 
 
-    operations.push({
+    this.operations.push({
         msgId: msgId,
         action: "delete"
     });
     continueWith();
 };
 
-function takeLastUnrevokeState(msgId) {
-    return takeLastUnrevokeStateBefore(msgId, operations.length);
-}
-
-function takeLastUnrevokeStateBefore(msgId, indexBefore) {
-    var indLastState = indexLastMsgStateBefore(msgId, indexBefore);
-    if (operations[indLastState].action == "revoke") {
-        return takeLastUnrevokeStateBefore(msgId, operations[indLastState].rollbackState);
+history.prototype.findLastState = function (msgId, indexBefore) {  // МЕТОДЫ С ЭТОГО И НИЖЕ НЕ БУДУТ РАБОТАТЬ!!! ПЕРЕДЕЛАТЬ ПОД ОБЪЕКТЫ
+	if (!indexBefore) {
+		var indexBefore = this.operations.length;
+	}
+    var indLastState = this.indexLastMsgStateBefore(msgId, indexBefore);
+    if (this.operations[indLastState].action == "revoke") {
+    	var indLastRevoke  = this.operations[indLastState].rollbackState;
+        return this.findLastState(msgId, indLastRevoke);
     } else {
         return indLastState;
     }
 }
 
-function indexLastMsgStateBefore(msgId, indexFrom) {
+history.prototype.indexLastMsgStateBefore= function (msgId, indexFrom)  {
     for (var i = indexFrom - 1; i >= 0; i--) {
-        if (operations[i].msgId == msgId) {
+        if (this.operations[i].msgId == msgId) {
             return (i);
         }
     };
     return (-1);
 }
 
-function rollback(msgId, continueWith) {
-    if (!isExist(msgId)) {
-        continueWith("Rollback non-existent message");
+history.prototype.rollback= function (msgId, continueWith)  {
+    if (!this.isExist(msgId)) {
+        continueWith(422, "Rollback non-existent message");
         return;
     }
-    var indLastUnrSt = takeLastUnrevokeState(msgId);
+    var indLastState = this.findLastState(msgId);
 
-    if (indLastUnrSt == -1) {
-        continueWith("Nothing for rollback");
+    if (indLastState == -1) {
+        continueWith(422, "Nothing for rollback");
         return;
     }
-    var revocableState = operations[indLastUnrSt];
+    var revocableState = this.operations[indLastState];
 
     var newState = {
         msgId: msgId,
-        userId: getUserIdByMsgId(msgId),
+        userId: this.getUserIdByMsgId(msgId),
         action: "revoke",
         revocableAction: revocableState.action,
-        rollbackState: indLastUnrSt
+        rollbackState: indLastState
     };
 
     if (revocableState.action == "delete") {
-        var indStateBeforeDelete = takeLastUnrevokeStateBefore(msgId, indLastUnrSt);
-        var oldText = operations[indStateBeforeDelete].text;
+        var indStateBeforeDelete = this.findLastState(msgId, indLastState);
+        var oldText = this.operations[indStateBeforeDelete].text;
         newState.text = oldText;
     }
 
-    operations.push(newState);
+    this.operations.push(newState);
     continueWith();
 }
 
-function getUserIdByMsgId(msgId) {
-    for (var i = 0; i < operations.length; i++) {
-        if (operations[i].msgId == msgId) {
-            return operations[i].userId;
+history.prototype.getUserIdByMsgId = function (msgId){
+    for (var i = 0; i < this.operations.length; i++) {
+        if (this.operations[i].msgId == msgId) {
+            return this.operations[i].userId;
         }
     };
     return -1;
 }
 
-function isExist(msgId) {
-    for (var i = operations.length - 1; i >= 0; i--) {
-        if (operations[i].msgId == msgId) {
+history.prototype.isExist = function (msgId) {
+    for (var i = this.operations.length - 1; i >= 0; i--) {
+        if (this.operations[i].msgId == msgId) {
             return true;
         }
     };
@@ -122,25 +137,7 @@ function uniqueId() {
     return Math.floor(date * random).toString();
 };
 
-function isPastToken(token) {
-    return token < getToken();
-}
-
-function isActualToken(token) {
-    return token == getToken();
-}
-
-function isFutureToken(token) {
-    return token > getToken();
-}
 
 module.exports = {
-    getMessagesFrom: getMessagesFrom,
-    getToken: getToken,
-    addMessage: addMessage,
-    deleteMsg: deleteMsg,
-    rollback: rollback,
-    isPastToken: isPastToken,
-    isActualToken: isActualToken,
-    isFutureToken: isFutureToken
+	history:history
 };
