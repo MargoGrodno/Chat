@@ -235,12 +235,12 @@ p {
 .citeBtn,
 .editBtn,
 .deleteBtn,
-.revokeBtn {
+.rollbackBtn {
     display: none;
 }
 
 .deleteMarker {
-    visibility: hidden;
+    display: none;
 }
 
 .messageConteiner:hover {

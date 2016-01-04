@@ -1,31 +1,96 @@
 'use strict';
 
 function history() {
-	this.operations = [];
-	console.log("constructor run");
+    this.operations = [];
 }
 
-history.prototype.getToken = function () {
+history.prototype.getToken = function() {
     return this.operations.length;
 };
 
-history.prototype.getMessagesFrom= function (token) {
-    return this.operations.slice(token, this.operations.length);
+history.prototype.getMessagesFrom = function(token) {
+    var reqOperations = this.operations.slice(token, this.operations.length);
+    var resultStates = [];
+
+    for (var i = 0; i < reqOperations.length; i++) {
+        var curentOperation = reqOperations[i];
+        var indexCurMsg = indexElemInArr(resultStates, curentOperation.msgId);
+
+        if (indexCurMsg == -1) {
+            resultStates.push({
+                msgId: curentOperation.msgId,
+                userId: this.getUserIdByMsgId(curentOperation.msgId),
+                text: "",
+                action: "edit",
+                isExist: true,
+                isDeleted: false,
+                isEdit: false
+            });
+            indexCurMsg = resultStates.length - 1;
+        }
+        var editedState = resultStates[indexCurMsg];
+
+        switch (curentOperation.action) {
+            case "add":
+                recordAddParametrs(editedState, curentOperation);
+                continue;
+            case "delete":
+                editedState.isDeleted = true;
+                continue;
+            case "rollback":
+                var rollbackOperation = this.operations[curentOperation.indRollbackOperation];
+                recordRollbackParametrs(editedState, rollbackOperation, resultStates, indexCurMsg);
+                break;
+            default:
+                throw new Error("not handled operation"+ curentOperation.action)
+        }
+    };
+    console.log(resultStates);
+    return resultStates;
 };
 
-history.prototype.isPastToken=  function (token)  {
+function recordAddParametrs(editedState, operation) {
+    editedState.text = operation.text;
+    editedState.action = "add";
+    editedState.userName = operation.userName;
+    editedState.date = operation.date;
+}
+
+function recordRollbackParametrs(editedState, rollbackOperation, resultStates, indexCurMsg) {
+    if (rollbackOperation.action == "delete") {
+        editedState.isDeleted = false;
+        editedState.text = rollbackOperation.text;
+    }
+    if (rollbackOperation.action == "add") {
+        editedState.isExist = false;
+        if (editedState.action == "add") {
+            resultStates.splice(indexCurMsg, 1)
+        }
+    }
+}
+
+function indexElemInArr(arr, elemId) {
+    for (var i = 0; i < arr.length; i++) {
+        if (arr[i].msgId == elemId) {
+            return i;
+        }
+    };
+    return -1;
+}
+
+history.prototype.isPastToken = function(token) {
     return token < this.getToken();
 }
 
-history.prototype.isActualToken =  function (token) {
+history.prototype.isActualToken = function(token) {
     return token == this.getToken();
 }
 
-history.prototype.isFutureToken =  function (token) {
+history.prototype.isFutureToken = function(token) {
     return token > this.getToken();
 }
 
-history.prototype.addMessage =  function (message, continueWith) {
+history.prototype.addMessage = function(message, continueWith) {
     this.operations.push({
         msgId: uniqueId(),
         action: "add",
@@ -37,7 +102,7 @@ history.prototype.addMessage =  function (message, continueWith) {
     continueWith();
 };
 
-history.prototype.deleteMsg=  function (message, continueWith) { // Проверить, возможно сообщение уже удалено. Тогда ошибка.
+history.prototype.deleteMsg = function(message, continueWith) {
     var msgId = message.id;
 
     if (message.method == "rollback") {
@@ -51,29 +116,31 @@ history.prototype.deleteMsg=  function (message, continueWith) { // Провер
     if (!this.isExist(msgId)) {
         continueWith(422, "Deleting non-existent message");
         return;
-    } 
+    }
 
     this.operations.push({
         msgId: msgId,
-        action: "delete"
+        action: "delete",
+        text: this.operations[this.findLastOperation(msgId)].text
     });
+
     continueWith();
 };
 
-history.prototype.findLastState = function (msgId, indexBefore) {  // МЕТОДЫ С ЭТОГО И НИЖЕ НЕ БУДУТ РАБОТАТЬ!!! ПЕРЕДЕЛАТЬ ПОД ОБЪЕКТЫ
-	if (!indexBefore) {
-		var indexBefore = this.operations.length;
-	}
-    var indLastState = this.indexLastMsgStateBefore(msgId, indexBefore);
-    if (this.operations[indLastState].action == "revoke") {
-    	var indLastRevoke  = this.operations[indLastState].rollbackState;
-        return this.findLastState(msgId, indLastRevoke);
+history.prototype.findLastOperation = function(msgId, indexBefore) {
+    if (!indexBefore) {
+        var indexBefore = this.operations.length;
+    }
+    var indLastOperation = this.indexLastMsgOperationBefore(msgId, indexBefore);
+    if (this.operations[indLastOperation].action == "rollback") {
+        var indLastRollback = this.operations[indLastOperation].indRollbackOperation;
+        return this.findLastOperation(msgId, indLastRollback);
     } else {
-        return indLastState;
+        return indLastOperation;
     }
 }
 
-history.prototype.indexLastMsgStateBefore= function (msgId, indexFrom)  {
+history.prototype.indexLastMsgOperationBefore = function(msgId, indexFrom) {
     for (var i = indexFrom - 1; i >= 0; i--) {
         if (this.operations[i].msgId == msgId) {
             return (i);
@@ -82,38 +149,30 @@ history.prototype.indexLastMsgStateBefore= function (msgId, indexFrom)  {
     return (-1);
 }
 
-history.prototype.rollback= function (msgId, continueWith)  {
+history.prototype.rollback = function(msgId, continueWith) {
     if (!this.isExist(msgId)) {
         continueWith(422, "Rollback non-existent message");
         return;
     }
-    var indLastState = this.findLastState(msgId);
+    var indRollbackOperation = this.findLastOperation(msgId);
 
-    if (indLastState == -1) {
+    if (indRollbackOperation == -1) {
         continueWith(422, "Nothing for rollback");
         return;
     }
-    var revocableState = this.operations[indLastState];
+    var rollbackOperation = this.operations[indRollbackOperation];
 
-    var newState = {
+    var newOperation = {
         msgId: msgId,
-        userId: this.getUserIdByMsgId(msgId),
-        action: "revoke",
-        revocableAction: revocableState.action,
-        rollbackState: indLastState
+        action: "rollback",
+        indRollbackOperation: indRollbackOperation
     };
 
-    if (revocableState.action == "delete") {
-        var indStateBeforeDelete = this.findLastState(msgId, indLastState);
-        var oldText = this.operations[indStateBeforeDelete].text;
-        newState.text = oldText;
-    }
-
-    this.operations.push(newState);
+    this.operations.push(newOperation);
     continueWith();
 }
 
-history.prototype.getUserIdByMsgId = function (msgId){
+history.prototype.getUserIdByMsgId = function(msgId) {
     for (var i = 0; i < this.operations.length; i++) {
         if (this.operations[i].msgId == msgId) {
             return this.operations[i].userId;
@@ -122,7 +181,7 @@ history.prototype.getUserIdByMsgId = function (msgId){
     return -1;
 }
 
-history.prototype.isExist = function (msgId) {
+history.prototype.isExist = function(msgId) {
     for (var i = this.operations.length - 1; i >= 0; i--) {
         if (this.operations[i].msgId == msgId) {
             return true;
@@ -139,5 +198,5 @@ function uniqueId() {
 
 
 module.exports = {
-	history:history
+    history: history
 };

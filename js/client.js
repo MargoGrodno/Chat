@@ -1,4 +1,4 @@
-var ip = '192.168.100.6';
+var ip = '192.168.0.101';
 var port = '31337';
 
 var uniqueId = function() {
@@ -81,7 +81,7 @@ function isError(text) {
 
 function ajax(method, url, data, continueWith, continueWithError) {
     var xhr = new XMLHttpRequest();
-    
+
     continueWithError = continueWithError || defaultErrorHandler;
     xhr.open(method || 'GET', url, true);
 
@@ -119,7 +119,7 @@ function ajax(method, url, data, continueWith, continueWithError) {
     xhr.send(data);
 
     function abortFn() {
-        xhr.abort();            
+        xhr.abort();
     }
     return abortFn;
 }
@@ -131,7 +131,7 @@ window.onerror = function(err) {
 function changeServer(newAddress) {
     appState.mainUrl = newAddress;
     appState.token = 0;
-    appState.abortFn();   
+    appState.abortFn();
     cleanHistory();
     doPolling();
 }
@@ -162,33 +162,11 @@ function rollbackMessage(messageId, continueWith) {
 
 function updateHistory(newMessages) {
     for (var i = 0; i < newMessages.length; i++) {
-        if (newMessages[i].action == "delete") {
-            markMsgAsDeleted(newMessages[i].msgId);
-        }
-        if (newMessages[i].action == "revoke") {
-            showRevokeMsg(newMessages[i]);
-        }
         if (newMessages[i].action == "add") {
             addMessageInternal(newMessages[i]);
         }
-    }
-}
-
-function showRevokeMsg(message) {
-    var msgId = message.msgId;
-
-    if (message.revocableAction == "add") {
-        $("#" + msgId).remove();
-    }
-    if (message.revocableAction == "delete") {
-        var oldText = message.text;
-        $("#" + msgId + " > .k2 > .text").text(oldText);
-        $("#" + msgId + " > .k1 > .deleteMarker").css("visibility", "hidden");
-        if (message.userId == appState.userId) {
-            $("#" + msgId + " > .k3 > .editBtn").css("display", "block");
-            $("#" + msgId + " > .k3 > .deleteBtn").css("display", "block");
-        } else {
-            $("#" + msgId + " > .k3 > .citeBtn").css("display", "block");
+        if (newMessages[i].action == "edit") {
+            editMessageInternal(newMessages[i]);
         }
     }
 }
@@ -205,40 +183,79 @@ function addMessageInternal(message) {
 
     $("#history").append(resultMessageDiv);
 
+    makeEventsForBtns(message);
+    makeCorrectMsgView(message);
     scrollHistoryBottom();
-    addBtnsForMsg(message);
 }
 
-function addBtnsForMsg(message) {
-    if (message.userId == appState.userId) {
-        $("#" + message.msgId + " > .k3 > .editBtn").css("display", "block");
+function editMessageInternal(message) {
+    if (!message.isExist) {
+        $("#" + message.msgId).remove();
+        return;
+    };
 
-        $("#" + message.msgId + " > .k3 > .deleteBtn").css("display", "block");
+    makeCorrectMsgView(message);
+    scrollHistoryBottom();
+}
+
+function makeEventsForBtns(message) {
+    if (message.userId == appState.userId) {
         $("#" + message.msgId + " > .k3 > .deleteBtn").on("click", function() {
             deleteMessage(message.msgId, function() {
                 console.log('Message deleted ' + message.msgId);
             });
         });
 
-        $("#" + message.msgId + " > .k3 > .revokeBtn").css("display", "block");
-        $("#" + message.msgId + " > .k3 > .revokeBtn").on("click", function() {
+        $("#" + message.msgId + " > .k3 > .rollbackBtn").on("click", function() {
             rollbackMessage(message.msgId, function() {
                 console.log('Message rollback ' + message.msgId);
             });
         });
+    }
+};
 
-    } else {
-        $("#" + message.msgId + " > .k3 > .citeBtn").css("display", "block");
+
+function makeCorrectMsgView(message) {
+    var messageId = message.msgId;
+    console.log(message.msgId + ", "+message.userId + ", " + message.text + ", " + message.isDeleted + ", " + message.isEdit + ", " + message.isExist + "!!!");
+
+    $("#" + messageId + " > .k2 > .text").text(message.text);
+
+    if (message.isDeleted) {
+        $("#" + messageId + " > .k2 > .text").text("(*deleted*)");
+        $("#" + messageId + " > .k1 > .deleteMarker").css("display", "block");
+    }
+    if (!message.isDeleted) {
+        $("#" + messageId + " > .k1 > .deleteMarker").css("display", "none");
+    }
+    if (message.isEdit) {
+        $("#" + messageId + " > .k1 > .editMarker").css("display", "block");
+    }
+    if (!message.isEdit) {
+        $("#" + messageId + " > .k1 > .editMarker").css("display", "none");
+    }
+
+    if (message.userId == appState.userId) {
+        $("#" + message.msgId + " > .k3 > .rollbackBtn").css("display", "block");
+        if (message.isDeleted) {
+            $("#" + messageId + " > .k3 > .editBtn").css("display", "none");
+            $("#" + messageId + " > .k3 > .deleteBtn").css("display", "none");
+        }
+        if (!message.isDeleted) {
+            $("#" + messageId + " > .k3 > .editBtn").css("display", "block");
+            $("#" + messageId + " > .k3 > .deleteBtn").css("display", "block");
+        }
+    }
+    if (message.userId != appState.userId) {
+        if (message.isDeleted) {
+            $("#" + messageId + " > .k3 > .citeBtn").css("display", "none");
+        }
+        if (!message.isDeleted) {
+            $("#" + messageId + " > .k3 > .citeBtn").css("display", "block");
+        }
     }
 }
 
-function markMsgAsDeleted(messageId) {
-    $("#" + messageId + " > .k2 > .text").text("(*deleted*)");
-    $("#" + messageId + " > .k1 > .deleteMarker").css("visibility", "visible");
-    $("#" + messageId + " > .k3 > .editBtn").css("display", "none");
-    $("#" + messageId + " > .k3 > .deleteBtn").css("display", "none");
-    $("#" + messageId + " > .k3 > .citeBtn").css("display", "none");
-}
 
 function addEventListerers() {
     onEnterPressed($("#newMessageField"), onSendButtonClick);
