@@ -1,4 +1,5 @@
 'use strict';
+
 var ip = '192.168.100.6';
 var port = '31337';
 
@@ -31,7 +32,7 @@ ChatClient.prototype.run = function(url) {
     function loop() {
         var url = 'http://' + thisObj.mainUrl + '?token=' + thisObj.token;
 
-        var abortFn = get( url, function(responseText) {
+        var abortFn = get(url, function(responseText) {
             $("#offline").hide("slow");
 
             var response = JSON.parse(responseText);
@@ -195,6 +196,7 @@ function onSendButtonClick() {
     if (msgText == '')
         return;
     $("#newMessageField").val("");
+
     client.post(msgText);
 }
 
@@ -210,24 +212,19 @@ function onChangeNameButtonClick() {
         $("#nameErrorMessage").show();
         return;
     }
+
     changeName(newName);
     closeNamePopup();
 }
 
 function onChangeServerButtonClick() {
     var newAddress = $("#serverAddressField").val();
-    console.log(newAddress);
-
     if (newAddress == '') {
         $("#changeServerErrorMessage").text("You can't save empty address!");
         $("#changeServerErrorMessage").show();
         return;
     }
+
     changeServer(newAddress);
     closeChangeServerPopup();
 }
-
-
-
-//client обращение к полям и методом. Посмотреть, подпоправить.
-// + редактирование запилить
