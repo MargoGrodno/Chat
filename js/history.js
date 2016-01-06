@@ -1,14 +1,14 @@
 'use strict';
 
-function history() {
+function History() {
     this.operations = [];
 }
 
-history.prototype.getToken = function() {
+History.prototype.getToken = function() {
     return this.operations.length;
 };
 
-history.prototype.getMessagesFrom = function(token) {
+History.prototype.getMessagesFrom = function(token) {
     var reqOperations = this.operations.slice(token, this.operations.length);
     var resultStates = [];
 
@@ -78,19 +78,19 @@ function indexElemInArr(arr, elemId) {
     return -1;
 }
 
-history.prototype.isPastToken = function(token) {
+History.prototype.isPastToken = function(token) {
     return token < this.getToken();
 }
 
-history.prototype.isActualToken = function(token) {
+History.prototype.isActualToken = function(token) {
     return token == this.getToken();
 }
 
-history.prototype.isFutureToken = function(token) {
+History.prototype.isFutureToken = function(token) {
     return token > this.getToken();
 }
 
-history.prototype.addMessage = function(message, continueWith) {
+History.prototype.addMessage = function(message, continueWith) {
     this.operations.push({
         msgId: uniqueId(),
         action: "add",
@@ -102,7 +102,7 @@ history.prototype.addMessage = function(message, continueWith) {
     continueWith();
 };
 
-history.prototype.deleteMsg = function(message, continueWith) {
+History.prototype.deleteMsg = function(message, continueWith) {
     var msgId = message.id;
 
     if (message.method == "rollback") {
@@ -127,7 +127,7 @@ history.prototype.deleteMsg = function(message, continueWith) {
     continueWith();
 };
 
-history.prototype.findLastOperation = function(msgId, indexBefore) {
+History.prototype.findLastOperation = function(msgId, indexBefore) {
     if (!indexBefore) {
         var indexBefore = this.operations.length;
     }
@@ -140,7 +140,7 @@ history.prototype.findLastOperation = function(msgId, indexBefore) {
     }
 }
 
-history.prototype.indexLastMsgOperationBefore = function(msgId, indexFrom) {
+History.prototype.indexLastMsgOperationBefore = function(msgId, indexFrom) {
     for (var i = indexFrom - 1; i >= 0; i--) {
         if (this.operations[i].msgId == msgId) {
             return (i);
@@ -149,7 +149,7 @@ history.prototype.indexLastMsgOperationBefore = function(msgId, indexFrom) {
     return (-1);
 }
 
-history.prototype.rollback = function(msgId, continueWith) {
+History.prototype.rollback = function(msgId, continueWith) {
     if (!this.isExist(msgId)) {
         continueWith(422, "Rollback non-existent message");
         return;
@@ -172,7 +172,7 @@ history.prototype.rollback = function(msgId, continueWith) {
     continueWith();
 }
 
-history.prototype.getUserIdByMsgId = function(msgId) {
+History.prototype.getUserIdByMsgId = function(msgId) {
     for (var i = 0; i < this.operations.length; i++) {
         if (this.operations[i].msgId == msgId) {
             return this.operations[i].userId;
@@ -181,7 +181,7 @@ history.prototype.getUserIdByMsgId = function(msgId) {
     return -1;
 }
 
-history.prototype.isExist = function(msgId) {
+History.prototype.isExist = function(msgId) {
     for (var i = this.operations.length - 1; i >= 0; i--) {
         if (this.operations[i].msgId == msgId) {
             return true;
@@ -198,5 +198,5 @@ function uniqueId() {
 
 
 module.exports = {
-    history: history
+    History: History
 };

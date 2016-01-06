@@ -1,62 +1,117 @@
-var ip = '192.168.0.101';
+'use strict';
+var ip = '192.168.100.6';
 var port = '31337';
 
-var uniqueId = function() {
-    var date = Date.now();
-    var random = Math.random() * Math.random();
-    return Math.floor(date * random).toString();
+var theMessage = function(text) {
+    var date = new Date();
+    return {
+        userId: client.userId,
+        userName: client.userName,
+        date: date.getTime(),
+        text: text
+    };
 };
 
-var appState = {
-    userName: 'Guest_' + uniqueId(),
-    userId: uniqueId(),
-    mainUrl: ip + ':' + port,
-    token: 0,
-    abortFn: null
-};
-
-function run() {
-    addEventListerers();
-    doPolling();
+function ChatClient() {
+    this.userName = 'Guest_' + uniqueId();
+    this.userId = uniqueId();
+    this.token = 0;
+    this.abortFn = null;
 }
 
-function doPolling() {
+ChatClient.prototype.connect = function(url) {
+    this.mainUrl = url;
+}
+
+ChatClient.prototype.run = function(url) {
+    addEventListerers();
+
+    var thisObj = this;
+
     function loop() {
-        var url = 'http://' + appState.mainUrl + '?token=' + appState.token;
+        var url = 'http://' + thisObj.mainUrl + '?token=' + thisObj.token;
 
-        get(url, function(responseText) {
-            var response = JSON.parse(responseText);
+        var abortFn = get( url, function(responseText) {
             $("#offline").hide("slow");
-            appState.token = response.token;
-            updateHistory(response.messages);
-            setTimeout(loop, 1000);
-            return;
 
-            defaultErrorHandler("unhandle response");
+            var response = JSON.parse(responseText);
+            thisObj.token = response.token;
+            thisObj.trigger('historyChanged', response.messages);
+            setTimeout(function() {
+                loop.apply(thisObj);
+            }, 1000);
+
         }, function(error) {
             console.log(error);
-            defaultErrorHandler(error);
-            setTimeout(loop, 1000);
+            thisObj.trigger('error', error);
+            setTimeout(function() {
+                loop.apply(thisObj);
+            }, 1000);
         });
+        thisObj.abortFn = abortFn;
     }
 
     loop();
 }
 
-function get(url, continueWith, continueWithError) {
-    appState.abortFn = ajax('GET', url, null, continueWith, continueWithError);
-}
+ChatClient.prototype.post = function(msgText) {
+    var message = theMessage(msgText);
+    post('http://' + client.mainUrl,
+        JSON.stringify(message),
+        function(newMessage) {
+            console.log('Message sent ' + msgText);
+        },
+        defaultErrorHandler);
+};
 
-function post(url, data, continueWith, continueWithError) {
-    ajax('POST', url, data, continueWith, continueWithError);
-}
+ChatClient.prototype.deleteMessage = function(messageId) {
+    del('http://' + client.mainUrl + '/' + messageId,
+        JSON.stringify({
+            id: messageId,
+            method: "delete"
+        }),
+        function() {
+            console.log('Message deleted ' + messageId);
+        },
+        defaultErrorHandler);
+};
 
-function put(url, data, continueWith, continueWithError) {
-    ajax('PUT', url, data, continueWith, continueWithError);
-}
 
-function del(url, data, continueWith, continueWithError) {
-    ajax('DELETE', url, data, continueWith, continueWithError);
+ChatClient.prototype.rollback = function(messageId, continueWith) {
+    del('http://' + client.mainUrl + '/' + messageId,
+        JSON.stringify({
+            id: messageId,
+            method: "rollback"
+        }),
+        function() {
+            console.log('Message rollback ' + messageId);
+        },
+        defaultErrorHandler);
+};
+
+Emitter(ChatClient.prototype);
+
+ChatClient.prototype.on('error', function(error) {
+    defaultErrorHandler(error);
+});
+
+ChatClient.prototype.on('historyChanged', function(deltaMessages) {
+    updateHistory(deltaMessages);
+});
+
+var client = new ChatClient();
+client.connect(ip + ':' + port);
+document.addEventListener("DOMContentLoaded", function() {
+    client.run();
+});
+
+function changeServer(newAddress) {
+    client.abortFn();
+    cleanHistory();
+
+    client = new ChatClient();
+    client.connect(newAddress);
+    client.run();
 }
 
 function defaultErrorHandler(message) {
@@ -66,98 +121,24 @@ function defaultErrorHandler(message) {
     console.error(message);
 }
 
-function isError(text) {
-    if (text == "")
-        return false;
-
-    try {
-        var obj = JSON.parse(text);
-    } catch (ex) {
-        return true;
-    }
-
-    return !!obj.error;
-}
-
-function ajax(method, url, data, continueWith, continueWithError) {
-    var xhr = new XMLHttpRequest();
-
-    continueWithError = continueWithError || defaultErrorHandler;
-    xhr.open(method || 'GET', url, true);
-
-    xhr.onload = function() {
-        if (xhr.readyState !== 4)
-            return;
-
-        if (xhr.status != 200) {
-            continueWithError('Error on the server side, response ' + xhr.status + ", " + xhr.responseText);
-            return;
-        }
-
-        if (isError(xhr.responseText)) {
-            continueWithError('Error on the server side, response ' + xhr.responseText);
-            return;
-        }
-
-        continueWith(xhr.responseText);
-    };
-
-    xhr.ontimeout = function() {
-        сontinueWithError('Server timed out !');
-    };
-
-    xhr.onerror = function(e) {
-        var errMsg = 'Server connection error http://' + appState.mainUrl + '\n' +
-            '\n' +
-            'Check if \n' +
-            '- server is active\n' +
-            '- server sends header "Access-Control-Allow-Origin:*"';
-
-        continueWithError(errMsg);
-    };
-
-    xhr.send(data);
-
-    function abortFn() {
-        xhr.abort();
-    }
-    return abortFn;
-}
-
 window.onerror = function(err) {
     defaultErrorHandler(err.toString());
 }
 
-function changeServer(newAddress) {
-    appState.mainUrl = newAddress;
-    appState.token = 0;
-    appState.abortFn();
-    cleanHistory();
-    doPolling();
-}
+function addEventListerers() {
+    onEnterPressed($("#newMessageField"), onSendButtonClick);
+    $("#sendButton").on('click', onSendButtonClick);
 
-function sendMessage(message, continueWith) {
-    post('http://' + appState.mainUrl, JSON.stringify(message), function() {
-        continueWith && continueWith();
+    $("#settingsButton").on("click", function() {
+        openChangeServerPopup(client.mainUrl);
     });
-}
+    onEnterPressed($("#serverAddressField"), onChangeServerButtonClick)
+    $("#changeServerButton").on("click", onChangeServerButtonClick);
+    $("#cancelChangeServerButton").on("click", closeChangeServerPopup);
 
-function deleteMessage(messageId, continueWith) {
-    del('http://' + appState.mainUrl + '/' + messageId, JSON.stringify({
-        id: messageId,
-        method: "delete"
-    }), function() {
-        continueWith && continueWith();
-    });
-}
-
-function rollbackMessage(messageId, continueWith) {
-    del('http://' + appState.mainUrl + '/' + messageId, JSON.stringify({
-        id: messageId,
-        method: "rollback"
-    }), function() {
-        continueWith && continueWith();
-    });
+    onEnterPressed($("#nameField"), onChangeNameButtonClick);
+    $("#changeNameButton").on("click", onChangeNameButtonClick);
+    $("#cancelNameButton").on("click", closeNamePopup);
 }
 
 function updateHistory(newMessages) {
@@ -185,7 +166,7 @@ function addMessageInternal(message) {
 
     makeEventsForBtns(message);
     makeCorrectMsgView(message);
-    scrollHistoryBottom();
+    scrollBottom($("#history"));
 }
 
 function editMessageInternal(message) {
@@ -195,135 +176,18 @@ function editMessageInternal(message) {
     };
 
     makeCorrectMsgView(message);
-    scrollHistoryBottom();
+    scrollBottom($("#history"));
 }
 
 function makeEventsForBtns(message) {
-    if (message.userId == appState.userId) {
+    if (message.userId == client.userId) {
         $("#" + message.msgId + " > .k3 > .deleteBtn").on("click", function() {
-            deleteMessage(message.msgId, function() {
-                console.log('Message deleted ' + message.msgId);
-            });
+            client.deleteMessage(message.msgId);
         });
-
         $("#" + message.msgId + " > .k3 > .rollbackBtn").on("click", function() {
-            rollbackMessage(message.msgId, function() {
-                console.log('Message rollback ' + message.msgId);
-            });
+            client.rollback(message.msgId);
         });
     }
-};
-
-
-function makeCorrectMsgView(message) {
-    var messageId = message.msgId;
-    console.log(message.msgId + ", "+message.userId + ", " + message.text + ", " + message.isDeleted + ", " + message.isEdit + ", " + message.isExist + "!!!");
-
-    $("#" + messageId + " > .k2 > .text").text(message.text);
-
-    if (message.isDeleted) {
-        $("#" + messageId + " > .k2 > .text").text("(*deleted*)");
-        $("#" + messageId + " > .k1 > .deleteMarker").css("display", "block");
-    }
-    if (!message.isDeleted) {
-        $("#" + messageId + " > .k1 > .deleteMarker").css("display", "none");
-    }
-    if (message.isEdit) {
-        $("#" + messageId + " > .k1 > .editMarker").css("display", "block");
-    }
-    if (!message.isEdit) {
-        $("#" + messageId + " > .k1 > .editMarker").css("display", "none");
-    }
-
-    if (message.userId == appState.userId) {
-        $("#" + message.msgId + " > .k3 > .rollbackBtn").css("display", "block");
-        if (message.isDeleted) {
-            $("#" + messageId + " > .k3 > .editBtn").css("display", "none");
-            $("#" + messageId + " > .k3 > .deleteBtn").css("display", "none");
-        }
-        if (!message.isDeleted) {
-            $("#" + messageId + " > .k3 > .editBtn").css("display", "block");
-            $("#" + messageId + " > .k3 > .deleteBtn").css("display", "block");
-        }
-    }
-    if (message.userId != appState.userId) {
-        if (message.isDeleted) {
-            $("#" + messageId + " > .k3 > .citeBtn").css("display", "none");
-        }
-        if (!message.isDeleted) {
-            $("#" + messageId + " > .k3 > .citeBtn").css("display", "block");
-        }
-    }
-}
-
-
-function addEventListerers() {
-    onEnterPressed($("#newMessageField"), onSendButtonClick);
-    $("#sendButton").on('click', onSendButtonClick);
-
-    $("#settingsButton").on("click", openChangeServerPopup);
-    onEnterPressed($("#serverAddressField"), onChangeServerButtonClick)
-    $("#changeServerButton").on("click", onChangeServerButtonClick);
-    $("#cancelChangeServerButton").on("click", closeChangeServerPopup);
-
-    onEnterPressed($("#nameField"), onChangeNameButtonClick);
-    $("#changeNameButton").on("click", onChangeNameButtonClick);
-    $("#cancelNameButton").on("click", onCloseNamePopupClick);
-}
-
-
-function openChangeServerPopup() {
-    $('#curentServer').text(appState.mainUrl);
-    $("#changeServer").show();
-    $("#modalOverlayMask").show();
-    $('#serverAddressField').val(appState.mainUrl);
-    $('#serverAddressField').focus();
-}
-
-function closeChangeServerPopup() {
-    $("#changeServerErrorMessage").hide();
-    $("#modalOverlayMask").hide();
-    $("#changeServer").hide();
-    $('#newMessageField').focus();
-}
-
-function closeNamePopup() {
-    $("#nameErrorMessage").hide();
-    $("#modalOverlayMask").hide();
-    $("#takeUsername").hide();
-    $('#newMessageField').focus();
-}
-
-function onCloseNamePopupClick() {
-    $("#username").text(appState.userName);
-    closeNamePopup();
-}
-
-function onEnterPressed(field, action) {
-    field.keypress(function(e) {
-        if (e.which == 13) {
-            action();
-        }
-    });
-}
-
-function cleanHistory() {
-    $("#history").empty();
-}
-
-function scrollHistoryBottom() {
-    historyConteiner = $("#history");
-    historyConteiner.scrollTop(historyConteiner.get(0).scrollHeight);
-}
-
-var theMessage = function(text) {
-    var date = new Date();
-    return {
-        userId: appState.userId,
-        userName: appState.userName,
-        date: date.getTime(),
-        text: text
-    };
 };
 
 function onSendButtonClick() {
@@ -331,10 +195,12 @@ function onSendButtonClick() {
     if (msgText == '')
         return;
     $("#newMessageField").val("");
-    var newMessage = theMessage(msgText);
-    sendMessage(newMessage, function() {
-        console.log('Message sent ' + newMessage.text);
-    });
+    client.post(msgText);
+}
+
+function changeName(name) {
+    client.userName = name;
+    $("#username").text(client.userName);
 }
 
 function onChangeNameButtonClick() {
@@ -346,11 +212,6 @@ function onChangeNameButtonClick() {
     }
     changeName(newName);
     closeNamePopup();
-}
-
-function changeName(name) {
-    appState.userName = name;
-    $("#username").text(appState.userName);
 }
 
 function onChangeServerButtonClick() {
@@ -366,11 +227,7 @@ function onChangeServerButtonClick() {
     closeChangeServerPopup();
 }
 
-function getHourMinutes(utcNumberDate) {
-    var date = new Date(utcNumberDate);
-    var hour = date.getHours();
-    var min = date.getMinutes();
-    hour = (hour < 10 ? "0" : "") + hour;
-    min = (min < 10 ? "0" : "") + min;
-    return hour + ":" + min;
-}
+
+
+//client обращение к полям и методом. Посмотреть, подпоправить.
+// + редактирование запилить

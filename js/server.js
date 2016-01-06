@@ -5,7 +5,7 @@ var url = require('url');
 var getIp = require('./getIp');
 var historyMod = require('./history');
 
-var history = new historyMod.history();
+var history = new historyMod.History();
 var toBeResponded = [];
 
 var ip = getIp();
