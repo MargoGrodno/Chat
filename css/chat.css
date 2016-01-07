@@ -174,7 +174,7 @@ p {
     overflow: auto;
 }
 
-.newMessage {
+.inputForm {
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
     box-sizing: border-box;
@@ -183,7 +183,7 @@ p {
     font-size: 0;
 }
 
-#newMessageField {
+.inputField {
     height: 30px;
     padding: 10px;
     border: 1px solid black;
@@ -193,7 +193,7 @@ p {
     box-sizing: border-box;
 }
 
-#sendButton {
+.sendButton {
     height: 30px;
     border-radius: 0 5px 5px 0;
     border: solid black;
@@ -202,6 +202,14 @@ p {
     -moz-box-sizing: border-box;
     box-sizing: border-box;
     width: 70px;
+}
+
+#editMessage {
+    display: none;
+}
+
+#editMessageField {
+    background-color: #ffecdc;
 }
 
 .messageConteiner {

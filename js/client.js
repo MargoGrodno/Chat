@@ -59,8 +59,20 @@ ChatClient.prototype.post = function(msgText) {
     var message = theMessage(msgText);
     post('http://' + client.mainUrl,
         JSON.stringify(message),
-        function(newMessage) {
+        function() {
             console.log('Message sent ' + msgText);
+        },
+        defaultErrorHandler);
+};
+
+ChatClient.prototype.editMessage = function(msgId, newText) {
+    put('http://' + client.mainUrl,
+        JSON.stringify({
+            id: msgId,
+            text: newText
+        }),
+        function() {
+            console.log('Message edit ' + msgId + "  " + newText);
         },
         defaultErrorHandler);
 };
@@ -106,6 +118,7 @@ document.addEventListener("DOMContentLoaded", function() {
     client.run();
 });
 
+
 function changeServer(newAddress) {
     client.abortFn();
     cleanHistory();
@@ -128,7 +141,10 @@ window.onerror = function(err) {
 
 function addEventListerers() {
     onEnterPressed($("#newMessageField"), onSendButtonClick);
-    $("#sendButton").on('click', onSendButtonClick);
+    $("#sendMsgButton").on('click', onSendButtonClick);
+
+    onEnterPressed($("#editMessageField"), onSendEditButtonClick);
+    $("#sendEditButton").on('click', onSendEditButtonClick);
 
     $("#settingsButton").on("click", function() {
         openChangeServerPopup(client.mainUrl);
@@ -182,6 +198,16 @@ function editMessageInternal(message) {
 
 function makeEventsForBtns(message) {
     if (message.userId == client.userId) {
+        $("#" + message.msgId + " > .k3 > .editBtn").on("click", function() {
+
+            $('#newMessage').css("display", "none");
+            $('#editMessage').css("display", "block");
+
+            $("#editMessageField").val($("#" + message.msgId + " > .k2 > .text").text());
+            $('#editMessageField').focus();
+            $("#" + message.msgId).css("background-color", "#ffecdc");
+            $('#editMessage').attr("msgId", message.msgId);
+        });
         $("#" + message.msgId + " > .k3 > .deleteBtn").on("click", function() {
             client.deleteMessage(message.msgId);
         });
@@ -190,6 +216,19 @@ function makeEventsForBtns(message) {
         });
     }
 };
+
+function onSendEditButtonClick() {
+    var newText = $("#editMessageField").val();
+    $("#editMessageField").val("");
+    
+    var msgId = $('#editMessage').attr("msgId");
+    client.editMessage(msgId, newText);
+
+    $("#" + msgId).css("background-color", "");
+    $('#newMessage').css("display", "block");
+    $('#editMessage').css("display", "none");
+    $('#newMessageField').focus();
+}
 
 function onSendButtonClick() {
     var msgText = $("#newMessageField").val();

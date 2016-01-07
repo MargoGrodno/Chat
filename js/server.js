@@ -107,7 +107,8 @@ function optionsHandler(req, res, continueWith) {
 
 function putHandler(req, res, continueWith) {
     console.log("put");
-    continueWith(501, "Unsuported method");
+    continueWith();
+    //continueWith(501, "Unsuported method");
 }
 
 function deleteHandler(req, res, continueWith) {
