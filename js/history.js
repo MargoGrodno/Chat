@@ -4,9 +4,100 @@ function History() {
     this.operations = [];
 }
 
-History.prototype.getToken = function() {
-    return this.operations.length;
+History.prototype.addMessage = function(message, continueWith) {
+    this.operations.push({
+        msgId: uniqueId(),
+        action: "add",
+        userId: message.userId,
+        userName: message.userName,
+        date: message.date,
+        text: message.text
+    });
+    continueWith();
 };
+
+History.prototype.editMessage = function(message, continueWith) {
+    var msgId = message.id;
+
+    if (!this.isExist(msgId)) {
+        continueWith( Error("Deleting non-existent message") );
+        return;
+    }
+
+    this.operations.push({
+        msgId: msgId,
+        action: "edit",
+        text: message.text,
+        oldText: this.operations[this.findLastOperation(msgId)].text
+    });
+    continueWith();
+};
+
+History.prototype.deleteMessage = function(message, continueWith) {
+    var msgId = message.id;
+
+    if (message.method == "rollback") {
+        this.rollback(message.id, continueWith);
+        return;
+    }
+    if (message.method !== "delete") {
+        continueWith( Error("Unsuported operation") );
+        return;
+    }
+    if (!this.isExist(msgId)) {
+        continueWith( Error("Deleting non-existent message") );
+        return;
+    }
+
+    this.operations.push({
+        msgId: msgId,
+        action: "delete",
+        text: this.operations[this.findLastOperation(msgId)].text
+    });
+
+    continueWith();
+};
+
+History.prototype.rollback = function(msgId, continueWith) {
+    if (!this.isExist(msgId)) {
+        continueWith( Error("Rollback non-existent message") );
+        return;
+    }
+    var indRollbackOperation = this.findLastOperation(msgId);
+
+    if (indRollbackOperation == -1) {
+        continueWith( Error("Nothing for rollback") );
+        return;
+    }
+    var rollbackOperation = this.operations[indRollbackOperation];
+
+    var newOperation = {
+        msgId: msgId,
+        action: "rollback",
+        indRollbackOperation: indRollbackOperation
+    };
+
+    this.operations.push(newOperation);
+    continueWith();
+}
+
+History.prototype.getMessages = function(token, continueWith) {
+    if (this.isFutureToken(token)) {
+        continueWith(Error("Wrong token"));
+        return;
+    }
+    if (this.isPastToken(token)) {
+        var messages = this.getMessagesFrom(token);
+        var body = {
+            token: this.getToken(),
+            messages: messages
+        };
+        continueWith(body);
+        return;
+    }
+    console.assert(this.isActualToken(token));
+    continueWith();
+}
 
 History.prototype.getMessagesFrom = function(token) {
     var reqOperations = this.operations.slice(token, this.operations.length);
@@ -91,14 +182,9 @@ function recordRollbackParametrs(self, indRollbackOperation, editedState, delete
     throw new Error("not handled rollback of operation" + rollbackOperation.action);
 }
 
-function indexElemInArr(arr, elemId) {
-    for (var i = 0; i < arr.length; i++) {
-        if (arr[i].msgId == elemId) {
-            return i;
-        }
-    };
-    return -1;
-}
+History.prototype.getToken = function() {
+    return this.operations.length;
+};
 
 History.prototype.isPastToken = function(token) {
     return token < this.getToken();
@@ -111,60 +197,6 @@ History.prototype.isActualToken = function(token) {
 History.prototype.isFutureToken = function(token) {
     return token > this.getToken();
 }
-
-History.prototype.addMessage = function(message, continueWith) {
-    this.operations.push({
-        msgId: uniqueId(),
-        action: "add",
-        userId: message.userId,
-        userName: message.userName,
-        date: message.date,
-        text: message.text
-    });
-    continueWith();
-};
-
-History.prototype.editMessage = function(message, continueWith) {
-    var msgId = message.id;
-
-    if (!this.isExist(msgId)) {
-        continueWith( Error("Deleting non-existent message") );
-        return;
-    }
-
-    this.operations.push({
-        msgId: msgId,
-        action: "edit",
-        text: message.text,
-        oldText: this.operations[this.findLastOperation(msgId)].text
-    });
-    continueWith();
-};
-
-History.prototype.deleteMessage = function(message, continueWith) {
-    var msgId = message.id;
-
-    if (message.method == "rollback") {
-        this.rollback(message.id, continueWith);
-        return;
-    }
-    if (message.method !== "delete") {
-        continueWith( Error("Unsuported operation") );
-        return;
-    }
-    if (!this.isExist(msgId)) {
-        continueWith( Error("Deleting non-existent message") );
-        return;
-    }
-
-    this.operations.push({
-        msgId: msgId,
-        action: "delete",
-        text: this.operations[this.findLastOperation(msgId)].text
-    });
-
-    continueWith();
-};
 
 History.prototype.findLastOperation = function(msgId, indexBefore) {
     if (indexBefore === undefined) {
@@ -186,29 +218,6 @@ History.prototype.indexLastMsgOperationBefore = function(msgId, indexFrom) {
         }
     };
     return (-1);
-}
-
-History.prototype.rollback = function(msgId, continueWith) {
-    if (!this.isExist(msgId)) {
-        continueWith( Error("Rollback non-existent message") );
-        return;
-    }
-    var indRollbackOperation = this.findLastOperation(msgId);
-
-    if (indRollbackOperation == -1) {
-        continueWith( Error("Nothing for rollback") );
-        return;
-    }
-    var rollbackOperation = this.operations[indRollbackOperation];
-
-    var newOperation = {
-        msgId: msgId,
-        action: "rollback",
-        indRollbackOperation: indRollbackOperation
-    };
-
-    this.operations.push(newOperation);
-    continueWith();
 }
 
 History.prototype.getUserIdByMsgId = function(msgId) {
@@ -235,6 +244,14 @@ function uniqueId() {
     return Math.floor(date * random).toString();
 };
 
+function indexElemInArr(arr, elemId) {
+    for (var i = 0; i < arr.length; i++) {
+        if (arr[i].msgId == elemId) {
+            return i;
+        }
+    };
+    return -1;
+}
 
 module.exports = {
     History: History

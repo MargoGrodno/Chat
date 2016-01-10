@@ -70,31 +70,22 @@ function responseWithError(response, err) {
     response.end();
 }
 
-function getHandler(req, res, continueWith) {
-    var urlToken = getUrlToken(req.url);
-
-    if (history.isFutureToken(urlToken)) {
-        continueWith(Error("Wrong token"));
-        return;
-    }
-    if (history.isPastToken(urlToken)) {
-        var messages = history.getMessagesFrom(urlToken);
-        var body = {
-            token: history.getToken(),
-            messages: messages
-        };
-        continueWith(body);
-        return;
-    }
-    console.assert(history.isActualToken(urlToken));
-
-    remaineWait(urlToken, continueWith);
-}
-
 function remaineWait(token, continueWith) {
     toBeResponded.push({
         token: token,
         continueWith: continueWith
+    });
+}
+
+function getHandler(req, res, continueWith) {
+    var urlToken = getUrlToken(req.url);
+
+    history.getMessages(urlToken, function(err) {
+        if (err) {
+            continueWith(err);
+        } else {
+            remaineWait(urlToken, continueWith)
+        }
     });
 }
 
