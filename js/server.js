@@ -10,40 +10,25 @@ var toBeResponded = [];
 
 var ip = getIp();
 
+var handlerMap = {
+    "GET": getHandler,
+    "OPTIONS": optionsHandler,
+    "DELETE": deleteHandler,
+    "POST": postHandler,
+    "PUT": putHandler
+};
+
 var server = http.createServer(function(req, res) {
     console.log('method: ' + req.method + ", " + req.url);
+    
+    var handler = handlerMap[req.method];
+    if(handler == undefined){
+        responseWith(res, 501);
+    }
 
-    if (req.method == 'GET') {
-        getHandler(req, res, function(statusCode, err) {
-            responseWith(res, statusCode, err);
-        });
-        return;
-    }
-    if (req.method == 'OPTIONS') {
-        optionsHandler(req, res, function(statusCode, err) {
-            responseWith(res, statusCode, err);
-        });
-        return;
-    }
-    if (req.method == 'POST') {
-        postHandler(req, res, function(statusCode, err) {
-            responseWith(res, statusCode, err);
-        });
-        return;
-    }
-    if (req.method == 'PUT') {
-        putHandler(req, res, function(statusCode, err) {
-            responseWith(res, statusCode, err);
-        });
-        return;
-    }
-    if (req.method == 'DELETE') {
-        deleteHandler(req, res, function(statusCode, err) {
-            responseWith(res, statusCode, err);
-        });
-        return;
-    }
-    responseWith(res, 501);
+    handlerMap[req.method](req, res, function(statusCode, err) {
+        responseWith(res, statusCode, err);
+    });
 });
 
 function responseWith(response, statusCode, body) {

@@ -138,11 +138,6 @@ History.prototype.editMessage = function(message, continueWith) {
         text: message.text,
         oldText: this.operations[this.findLastOperation(msgId)].text
     });
-
-
-    console.log(this.operations[this.operations.length - 1]);
-
-
     continueWith();
 };
 

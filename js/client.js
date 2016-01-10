@@ -148,6 +148,13 @@ function addEventListerers() {
 
     onEnterPressed($("#editMessageField"), onSendEditButtonClick);
     $("#sendEditButton").on('click', onSendEditButtonClick);
+    $("#editMessageField").keyup(function() {
+        var value = $(this).val();
+        var editMsgId = $('#editMessage').attr("msgId");
+        if (value == "") {
+            closeEditField(editMsgId);
+        }
+    }).keyup();
 
     $("#settingsButton").on("click", function() {
         openChangeServerPopup(client.mainUrl);
@@ -241,7 +248,7 @@ function closeEditField(msgId) {
 }
 
 
-function onEditButtonClick(msgId) {    
+function onEditButtonClick(msgId) {
     var attr = $('#editMessage').attr('msgId');
     if (typeof attr !== typeof undefined && attr !== false) {
         closeEditField(attr);
