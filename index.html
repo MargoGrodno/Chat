@@ -10,10 +10,6 @@
     <script src="bower_components/jquery/dist/jquery.min.js"></script>
     <script src="bower_components/lodash/lodash.min.js"></script>
     <script src="bower_components/emitter.js/emitter.js"></script>
-    <script src="js/ajax.js"></script>
-    <script src="js/utils.js"></script>
-    <script src="js/view.js"></script>
-    <script src="js/client.js"></script>
 </head>
 
 <body>
@@ -58,7 +54,7 @@
         </div>
     </div>
 </body>
-<script type="text/template" id="list-template">
+<script type="text/template" id="msg-template-alien">
     <div class="messageConteiner" id="<%=id%>">
         <div class="k1">
             <div class="time">
@@ -80,17 +76,46 @@
             <div class="citeBtn">
                 <i class="fa fa-reply"></i>
             </div>
-            <div class="editBtn">
+        </div>
+    </div>
+</script>
+<script type="text/template" id="msg-template-own">
+    <div class="messageConteiner" id="<%=id%>">
+        <div class="k1">
+            <div class="time">
+                <%=time%>
+            </div>
+            <div class="deleteMarker">
+                <i class="fa fa-trash"></i>
+            </div>
+            <div class="editMarker">
                 <i class="fa fa-pencil"></i>
+            </div>
+        </div>
+        <div class="k2">
+            <div class="name">
+                <%=name%>
+            </div>
+            <div class="text">
+                <%=text%>
+            </div>
+        </div>
+        <div class="k3">
+            <div class="rollbackBtn">
+                <i class="fa fa-times"></i>
             </div>
             <div class="deleteBtn">
                 <i class="fa fa-trash"></i>
             </div>
-            <div class="rollbackBtn">
-                <i class="fa fa-times"></i>
+            <div class="editBtn">
+                <i class="fa fa-pencil"></i>
             </div>
         </div>
     </div>
 </script>
+<script src="js/ajax.js"></script>
+<script src="js/utils.js"></script>
+<script src="js/view.js"></script>
+<script src="js/client.js"></script>
 
 </html>

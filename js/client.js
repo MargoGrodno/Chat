@@ -1,5 +1,8 @@
 'use strict';
 
+var tmplMessageOwn = _.template(document.getElementById('msg-template-own').innerHTML);
+var tmplMessageAlien = _.template(document.getElementById('msg-template-alien').innerHTML);
+
 var ip = '192.168.100.6';
 var port = '31337';
 
@@ -55,7 +58,7 @@ ChatClient.prototype.run = function(url) {
     loop();
 }
 
-ChatClient.prototype.post = function(msgText) {
+ChatClient.prototype.postMessage = function(msgText) {
     var message = theMessage(msgText);
     post('http://' + client.mainUrl,
         JSON.stringify(message),
@@ -170,9 +173,15 @@ function updateHistory(newMessages) {
 }
 
 function addMessageInternal(message) {
-    var tmplMessage = _.template(document.getElementById('list-template').innerHTML);
+    var curentTmpl;
 
-    var resultMessageDiv = tmplMessage({
+    if (message.userId == client.userId) {
+        curentTmpl = tmplMessageOwn;
+    } else {
+        curentTmpl = tmplMessageAlien;
+    }
+
+    var resultMessageDiv = curentTmpl({
         time: getHourMinutes(message.date),
         name: message.userName,
         text: message.text,
@@ -181,7 +190,7 @@ function addMessageInternal(message) {
 
     $("#history").append(resultMessageDiv);
 
-    makeEventsForBtns(message);
+    makeEventsForOwnBtns(message);
     makeCorrectMsgView(message);
     scrollBottom($("#history"));
 }
@@ -196,17 +205,10 @@ function editMessageInternal(message) {
     scrollBottom($("#history"));
 }
 
-function makeEventsForBtns(message) {
+function makeEventsForOwnBtns(message) {
     if (message.userId == client.userId) {
         $("#" + message.msgId + " > .k3 > .editBtn").on("click", function() {
-
-            $('#newMessage').css("display", "none");
-            $('#editMessage').css("display", "block");
-
-            $("#editMessageField").val($("#" + message.msgId + " > .k2 > .text").text());
-            $('#editMessageField').focus();
-            $("#" + message.msgId).css("background-color", "#ffecdc");
-            $('#editMessage').attr("msgId", message.msgId);
+            onEditButtonClick(message.msgId);
         });
         $("#" + message.msgId + " > .k3 > .deleteBtn").on("click", function() {
             client.deleteMessage(message.msgId);
@@ -217,17 +219,44 @@ function makeEventsForBtns(message) {
     }
 };
 
+function showEditField(msgId) {
+    $('#newMessage').css("display", "none");
+
+    $('#editMessage').css("display", "block");
+    $('#editMessage').attr("msgId", msgId);
+    $("#editMessageField").val($("#" + msgId + " > .k2 > .text").text());
+    $('#editMessageField').focus();
+
+    $("#" + msgId).css("background-color", "#ffecdc");
+}
+
+function closeEditField(msgId) {
+    $('#editMessage').css("display", "none");
+    $('#editMessage').removeAttr("msgId");
+    $("#editMessageField").val("");
+    $("#" + msgId).css("background-color", "");
+
+    $('#newMessage').css("display", "block");
+    $('#newMessageField').focus();
+}
+
+
+function onEditButtonClick(msgId) {    
+    var attr = $('#editMessage').attr('msgId');
+    if (typeof attr !== typeof undefined && attr !== false) {
+        closeEditField(attr);
+    }
+
+    showEditField(msgId);
+}
+
 function onSendEditButtonClick() {
     var newText = $("#editMessageField").val();
-    $("#editMessageField").val("");
-    
     var msgId = $('#editMessage').attr("msgId");
-    client.editMessage(msgId, newText);
 
-    $("#" + msgId).css("background-color", "");
-    $('#newMessage').css("display", "block");
-    $('#editMessage').css("display", "none");
-    $('#newMessageField').focus();
+    closeEditField(msgId);
+
+    client.editMessage(msgId, newText);
 }
 
 function onSendButtonClick() {
@@ -236,7 +265,7 @@ function onSendButtonClick() {
         return;
     $("#newMessageField").val("");
 
-    client.post(msgText);
+    client.postMessage(msgText);
 }
 
 function changeName(name) {

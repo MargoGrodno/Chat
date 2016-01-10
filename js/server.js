@@ -106,14 +106,8 @@ function optionsHandler(req, res, continueWith) {
 }
 
 function putHandler(req, res, continueWith) {
-    console.log("put");
-    continueWith();
-    //continueWith(501, "Unsuported method");
-}
-
-function deleteHandler(req, res, continueWith) {
     awaitBody(req, function(message) {
-        history.deleteMsg(message, function(statusCode, err) {
+        history.editMessage(message, function(statusCode, err) {
             if (statusCode) {
                 continueWith(statusCode, err);
             } else {
@@ -121,7 +115,19 @@ function deleteHandler(req, res, continueWith) {
                 continueWith();
             }
         });
-        return;
+    });
+}
+
+function deleteHandler(req, res, continueWith) {
+    awaitBody(req, function(message) {
+        history.deleteMessage(message, function(statusCode, err) {
+            if (statusCode) {
+                continueWith(statusCode, err);
+            } else {
+                respondAll();
+                continueWith();
+            }
+        });
     });
 }
 

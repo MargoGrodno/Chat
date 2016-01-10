@@ -26,7 +26,7 @@ function cleanHistory() {
 
 function makeCorrectMsgView(message) {
     var messageId = message.msgId;
-    
+
     $("#" + messageId + " > .k2 > .text").text(message.text);
 
     if (message.isDeleted) {
@@ -45,6 +45,7 @@ function makeCorrectMsgView(message) {
 
     if (message.userId == client.userId) {
         $("#" + message.msgId + " > .k3 > .rollbackBtn").css("display", "block");
+
         if (message.isDeleted) {
             $("#" + messageId + " > .k3 > .editBtn").css("display", "none");
             $("#" + messageId + " > .k3 > .deleteBtn").css("display", "none");
@@ -53,6 +54,11 @@ function makeCorrectMsgView(message) {
             $("#" + messageId + " > .k3 > .editBtn").css("display", "block");
             $("#" + messageId + " > .k3 > .deleteBtn").css("display", "block");
         }
+
+        if (message.isEdit) {
+            $("#" + messageId + " > .k3 > .editBtn").css("display", "none");
+        }
+
     }
     if (message.userId != client.userId) {
         if (message.isDeleted) {
