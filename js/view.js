@@ -29,18 +29,20 @@ function makeCorrectMsgView(message) {
 
     $("#" + messageId + " > .k2 > .text").text(message.text);
 
-    if (message.isDeleted) {
-        $("#" + messageId + " > .k2 > .text").text("(*deleted*)");
-        $("#" + messageId + " > .k1 > .deleteMarker").css("display", "block");
-    }
-    if (!message.isDeleted) {
-        $("#" + messageId + " > .k1 > .deleteMarker").css("display", "none");
-    }
     if (message.isEdit) {
         $("#" + messageId + " > .k1 > .editMarker").css("display", "block");
     }
     if (!message.isEdit) {
         $("#" + messageId + " > .k1 > .editMarker").css("display", "none");
+    }
+
+    if (message.isDeleted) {
+        $("#" + messageId + " > .k2 > .text").text("(*deleted*)");
+        $("#" + messageId + " > .k1 > .deleteMarker").css("display", "block");
+        $("#" + messageId + " > .k1 > .editMarker").css("display", "none");
+    }
+    if (!message.isDeleted) {
+        $("#" + messageId + " > .k1 > .deleteMarker").css("display", "none");
     }
 
     if (message.userId == client.userId) {

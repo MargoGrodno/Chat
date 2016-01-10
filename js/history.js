@@ -128,7 +128,7 @@ History.prototype.editMessage = function(message, continueWith) {
     var msgId = message.id;
 
     if (!this.isExist(msgId)) {
-        continueWith(422, "Deleting non-existent message");
+        continueWith( Error("Deleting non-existent message") );
         return;
     }
 
@@ -149,11 +149,11 @@ History.prototype.deleteMessage = function(message, continueWith) {
         return;
     }
     if (message.method !== "delete") {
-        continueWith(400, "unsuported operation");
+        continueWith( Error("Unsuported operation") );
         return;
     }
     if (!this.isExist(msgId)) {
-        continueWith(422, "Deleting non-existent message");
+        continueWith( Error("Deleting non-existent message") );
         return;
     }
 
@@ -190,13 +190,13 @@ History.prototype.indexLastMsgOperationBefore = function(msgId, indexFrom) {
 
 History.prototype.rollback = function(msgId, continueWith) {
     if (!this.isExist(msgId)) {
-        continueWith(422, "Rollback non-existent message");
+        continueWith( Error("Rollback non-existent message") );
         return;
     }
     var indRollbackOperation = this.findLastOperation(msgId);
 
     if (indRollbackOperation == -1) {
-        continueWith(422, "Nothing for rollback");
+        continueWith( Error("Nothing for rollback") );
         return;
     }
     var rollbackOperation = this.operations[indRollbackOperation];

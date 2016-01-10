@@ -18,23 +18,35 @@ var handlerMap = {
     "PUT": putHandler
 };
 
+var errStatusMap = {
+    "Deleting non-existent message": 422,
+    "Rollback non-existent message": 422,
+    "Nothing for rollback": 422,
+    "Unsuported operation": 400,
+    "Wrong token": 422,
+    "Unsuported http request": 501
+}
+
 var server = http.createServer(function(req, res) {
     console.log('method: ' + req.method + ", " + req.url);
-    
+
     var handler = handlerMap[req.method];
-    if(handler == undefined){
-        responseWith(res, 501);
+    if (handler == undefined) {
+        responseWith(res, Error("Unsuported http request"));
     }
 
-    handlerMap[req.method](req, res, function(statusCode, err) {
-        responseWith(res, statusCode, err);
+    handlerMap[req.method](req, res, function(err) {
+        responseWith(res, err);
     });
 });
 
-function responseWith(response, statusCode, body) {
-    if (!statusCode) {
-        statusCode = 200;
+function responseWith(response, body) {
+    if (body instanceof Error) {
+        responseWithError(response, body);
+        return;
     }
+
+    var statusCode = 200;
     response.writeHeader(statusCode, {
         'Access-Control-Allow-Origin': '*',
         'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE'
@@ -45,11 +57,24 @@ function responseWith(response, statusCode, body) {
     response.end();
 }
 
+function responseWithError(response, err) {
+    var statusCode = errStatusMap[err.message];
+    if (statusCode == undefined) {
+        statusCode = 400;
+    }
+
+    response.writeHeader(statusCode, {
+        'Access-Control-Allow-Origin': '*'
+    });
+    response.write(JSON.stringify(err.message));
+    response.end();
+}
+
 function getHandler(req, res, continueWith) {
     var urlToken = getUrlToken(req.url);
 
     if (history.isFutureToken(urlToken)) {
-        continueWith(422, "Wrong token");
+        continueWith(Error("Wrong token"));
         return;
     }
     if (history.isPastToken(urlToken)) {
@@ -58,7 +83,7 @@ function getHandler(req, res, continueWith) {
             token: history.getToken(),
             messages: messages
         };
-        continueWith(200, body);
+        continueWith(body);
         return;
     }
     console.assert(history.isActualToken(urlToken));
@@ -75,9 +100,9 @@ function remaineWait(token, continueWith) {
 
 function postHandler(req, res, continueWith) {
     awaitBody(req, function(message) {
-        history.addMessage(message, function(statusCode, err) {
-            if (statusCode) {
-                continueWith(statusCode, err);
+        history.addMessage(message, function(err) {
+            if (err) {
+                continueWith(err);
             } else {
                 respondAll();
                 continueWith();
@@ -92,9 +117,9 @@ function optionsHandler(req, res, continueWith) {
 
 function putHandler(req, res, continueWith) {
     awaitBody(req, function(message) {
-        history.editMessage(message, function(statusCode, err) {
-            if (statusCode) {
-                continueWith(statusCode, err);
+        history.editMessage(message, function(err) {
+            if (err) {
+                continueWith(err);
             } else {
                 respondAll();
                 continueWith();
@@ -105,9 +130,9 @@ function putHandler(req, res, continueWith) {
 
 function deleteHandler(req, res, continueWith) {
     awaitBody(req, function(message) {
-        history.deleteMessage(message, function(statusCode, err) {
-            if (statusCode) {
-                continueWith(statusCode, err);
+        history.deleteMessage(message, function(err) {
+            if (err) {
+                continueWith(err);
             } else {
                 respondAll();
                 continueWith();
@@ -122,7 +147,7 @@ function respondAll() {
             token: history.getToken(),
             messages: history.getMessagesFrom(waiter.token)
         };
-        waiter.continueWith(200, body);
+        waiter.continueWith(body);
     });
     toBeResponded = [];
 }
