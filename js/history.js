@@ -20,7 +20,7 @@ History.prototype.editMessage = function(message, continueWith) {
     var msgId = message.id;
 
     if (!this.isExist(msgId)) {
-        continueWith( Error("Deleting non-existent message") );
+        continueWith(Error("Deleting non-existent message"));
         return;
     }
 
@@ -41,11 +41,11 @@ History.prototype.deleteMessage = function(message, continueWith) {
         return;
     }
     if (message.method !== "delete") {
-        continueWith( Error("Unsuported operation") );
+        continueWith(Error("Unsuported operation"));
         return;
     }
     if (!this.isExist(msgId)) {
-        continueWith( Error("Deleting non-existent message") );
+        continueWith(Error("Deleting non-existent message"));
         return;
     }
 
@@ -60,13 +60,13 @@ History.prototype.deleteMessage = function(message, continueWith) {
 
 History.prototype.rollback = function(msgId, continueWith) {
     if (!this.isExist(msgId)) {
-        continueWith( Error("Rollback non-existent message") );
+        continueWith(Error("Rollback non-existent message"));
         return;
     }
     var indRollbackOperation = this.findLastOperation(msgId);
 
     if (indRollbackOperation == -1) {
-        continueWith( Error("Nothing for rollback") );
+        continueWith(Error("Nothing for rollback"));
         return;
     }
     var rollbackOperation = this.operations[indRollbackOperation];
@@ -95,21 +95,24 @@ History.prototype.getMessages = function(token, continueWith) {
         continueWith(body);
         return;
     }
-    console.assert(this.isActualToken(token));
+    if (!this.isActualToken(token)) {
+        continueWith(Error("Wrong token"));
+        return;
+    }
     continueWith();
 }
 
 History.prototype.getMessagesFrom = function(token) {
     var reqOperations = this.operations.slice(token, this.operations.length);
-    var resultStates = [];
+    var messages = [];
     var self = this;
 
     for (var i = 0; i < reqOperations.length; i++) {
         var curentOperation = reqOperations[i];
-        var indexCurMsg = indexElemInArr(resultStates, curentOperation.msgId);
+        var indexCurMsg = indexElemInArr(messages, curentOperation.msgId);
 
         if (indexCurMsg == -1) {
-            resultStates.push({
+            messages.push({
                 msgId: curentOperation.msgId,
                 userId: this.getUserIdByMsgId(curentOperation.msgId),
                 text: "",
@@ -118,65 +121,65 @@ History.prototype.getMessagesFrom = function(token) {
                 isDeleted: false,
                 isEdit: false
             });
-            indexCurMsg = resultStates.length - 1;
+            indexCurMsg = messages.length - 1;
         }
-        var editedState = resultStates[indexCurMsg];
+        var editedMsg = messages[indexCurMsg];
 
         switch (curentOperation.action) {
             case "add":
-                recordAddParametrs(editedState, curentOperation);
+                recordAddParametrs(editedMsg, curentOperation);
                 continue;
             case "delete":
-                editedState.isDeleted = true;
+                editedMsg.isDeleted = true;
                 continue;
             case "edit":
-                editedState.text = curentOperation.text;
-                editedState.isEdit = true;
+                editedMsg.text = curentOperation.text;
+                editedMsg.isEdit = true;
                 continue;
             case "rollback":
-                recordRollbackParametrs(self, curentOperation.indRollbackOperation, editedState, function() {
-                    resultStates.splice(indexCurMsg, 1)
+                recordRollbackParametrs(self, curentOperation.indRollbackOperation, editedMsg, function() {
+                    messages.splice(indexCurMsg, 1)
                 });
                 break;
             default:
                 throw new Error("not handled operation" + curentOperation.action);
         }
     };
-    console.log(resultStates);
-    return resultStates;
+    console.log(messages);
+    return messages;
 };
 
-function recordAddParametrs(editedState, operation) {
-    editedState.text = operation.text;
-    editedState.action = "add";
-    editedState.userName = operation.userName;
-    editedState.date = operation.date;
+function recordAddParametrs(editedMsg, operation) {
+    editedMsg.text = operation.text;
+    editedMsg.action = "add";
+    editedMsg.userName = operation.userName;
+    editedMsg.date = operation.date;
 }
 
-function recordRollbackParametrs(self, indRollbackOperation, editedState, deleteState) {
+function recordRollbackParametrs(self, indRollbackOperation, editedMsg, deleteState) {
     var rollbackOperation = self.operations[indRollbackOperation];
     if (rollbackOperation.action == "add") {
-        editedState.isExist = false;
-        if (editedState.action == "add") {
+        editedMsg.isExist = false;
+        if (editedMsg.action == "add") {
             deleteState();
         }
         return;
     }
     if (rollbackOperation.action == "delete") {
-        editedState.isDeleted = false;
-        editedState.text = rollbackOperation.text;
+        editedMsg.isDeleted = false;
+        editedMsg.text = rollbackOperation.text;
 
-        var indLastOperation = self.findLastOperation(editedState.msgId, indRollbackOperation);
+        var indLastOperation = self.findLastOperation(editedMsg.msgId, indRollbackOperation);
         var lastOperation = self.operations[indLastOperation];
         if (lastOperation.action == "edit") {
-            editedState.isEdit = true;
+            editedMsg.isEdit = true;
         }
 
         return;
     }
     if (rollbackOperation.action == "edit") {
-        editedState.isEdit = false;
-        editedState.text = rollbackOperation.oldText;
+        editedMsg.isEdit = false;
+        editedMsg.text = rollbackOperation.oldText;
         return;
     }
     throw new Error("not handled rollback of operation" + rollbackOperation.action);
@@ -203,6 +206,9 @@ History.prototype.findLastOperation = function(msgId, indexBefore) {
         var indexBefore = this.operations.length;
     }
     var indLastOperation = this.indexLastMsgOperationBefore(msgId, indexBefore);
+    if (indLastOperation == -1) {
+        return -1;
+    }
     if (this.operations[indLastOperation].action == "rollback") {
         var indLastRollback = this.operations[indLastOperation].indRollbackOperation;
         return this.findLastOperation(msgId, indLastRollback);

@@ -24,7 +24,8 @@ var errStatusMap = {
     "Nothing for rollback": 422,
     "Unsuported operation": 400,
     "Wrong token": 422,
-    "Unsuported http request": 501
+    "Unsuported http request": 501,
+    "Bad Request": 400
 }
 
 var server = http.createServer(function(req, res) {
@@ -79,6 +80,11 @@ function remaineWait(token, continueWith) {
 
 function getHandler(req, res, continueWith) {
     var urlToken = getUrlToken(req.url);
+    
+    if (urlToken == undefined) {
+        continueWith(Error("Bad Request"));
+        return;
+    }
 
     history.getMessages(urlToken, function(err) {
         if (err) {

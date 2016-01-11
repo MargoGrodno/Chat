@@ -1,4 +1,5 @@
 'use strict';
+console.log(localStorage.getItem("PORT"));
 
 var tmplMessageOwn = _.template(document.getElementById('msg-template-own').innerHTML);
 var tmplMessageAlien = _.template(document.getElementById('msg-template-alien').innerHTML);
@@ -117,10 +118,12 @@ ChatClient.prototype.on('historyChanged', function(deltaMessages) {
 
 var client = new ChatClient();
 client.connect(ip + ':' + port);
-document.addEventListener("DOMContentLoaded", function() {
-    client.run();
-});
 
+document.onreadystatechange = function () {
+  if (document.readyState == "complete") {
+    client.run();
+  }
+}
 
 function changeServer(newAddress) {
     client.abortFn();
