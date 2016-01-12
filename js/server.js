@@ -49,8 +49,7 @@ function responseWith(response, body) {
 
     var statusCode = 200;
     response.writeHeader(statusCode, {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Methods': 'GET,PUT,POST,DELETE'
+        'Access-Control-Allow-Origin': '*'
     });
     if (body) {
         response.write(JSON.stringify(body));
@@ -110,6 +109,7 @@ function postHandler(req, res, continueWith) {
 }
 
 function optionsHandler(req, res, continueWith) {
+    res.setHeader('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE');
     continueWith();
 }
 
