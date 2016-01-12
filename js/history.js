@@ -4,6 +4,11 @@ function History() {
     this.operations = [];
 }
 
+History.prototype.getToken = function() {
+    var token = this.operations.length;
+    return encodeToken(token);
+};
+
 History.prototype.addMessage = function(message, continueWith) {
     this.operations.push({
         msgId: uniqueId(),
@@ -81,88 +86,71 @@ History.prototype.rollback = function(msgId, continueWith) {
     continueWith();
 }
 
-History.prototype.getMessages = function(token, continueWith) {
-    if (this.isFutureToken(token)) {
+History.prototype.getMessages = function(encodedToken, continueWith) {
+    var token = decodeToken(encodedToken);
+
+    if (isFutureToken.call(this, token)) {
         continueWith(Error("Wrong token"));
         return;
     }
-    if (this.isPastToken(token)) {
-        var messages = this.getMessagesFrom(token);
-        var body = {
-            token: this.getToken(),
-            messages: messages
-        };
-        continueWith(body);
+    if (isPastToken.call(this, token)) {
+        var messages = getMessagesFrom.call(this, token);
+        continueWith(messages);
         return;
     }
-    if (!this.isActualToken(token)) {
+    if (!isActualToken.call(this, token)) {
         continueWith(Error("Wrong token"));
         return;
     }
     continueWith();
 }
 
-History.prototype.getMessagesFrom = function(token) {
+function isAddAtThisPart(token, indAdd) {
+    return indAdd >= token;
+}
+
+function getMessagesFrom(token) {
     var reqOperations = this.operations.slice(token, this.operations.length);
     var messages = [];
     var self = this;
 
     for (var i = 0; i < reqOperations.length; i++) {
         var curentOperation = reqOperations[i];
-        var indexCurMsg = indexElemInArr(messages, curentOperation.msgId);
 
-        if (indexCurMsg == -1) {
-            messages.push({
+        var indEditedMsg = findOrCreate(messages, curentOperation.msgId, function() {
+            return {
                 msgId: curentOperation.msgId,
-                userId: this.getUserIdByMsgId(curentOperation.msgId),
+                userId: self.getUserIdByMsgId(curentOperation.msgId),
                 text: "",
-                action: "edit",
                 isExist: true,
                 isDeleted: false,
                 isEdit: false
-            });
-            indexCurMsg = messages.length - 1;
-        }
-        var editedMsg = messages[indexCurMsg];
+            }
+        });
 
-        switch (curentOperation.action) {
-            case "add":
-                recordAddParametrs(editedMsg, curentOperation);
-                continue;
-            case "delete":
-                editedMsg.isDeleted = true;
-                continue;
-            case "edit":
-                editedMsg.text = curentOperation.text;
-                editedMsg.isEdit = true;
-                continue;
-            case "rollback":
-                recordRollbackParametrs(self, curentOperation.indRollbackOperation, editedMsg, function() {
-                    messages.splice(indexCurMsg, 1)
-                });
-                break;
-            default:
-                throw new Error("not handled operation" + curentOperation.action);
-        }
+        var editedMsg = messages[indEditedMsg];
+
+        if (curentOperation.action == "rollback") {
+            applyRollback(self, editedMsg, curentOperation, messages, indEditedMsg, token);
+            continue;
+        };
+
+        applyChanges(editedMsg, curentOperation);
     };
     console.log(messages);
     return messages;
 };
 
-function recordAddParametrs(editedMsg, operation) {
-    editedMsg.text = operation.text;
-    editedMsg.action = "add";
-    editedMsg.userName = operation.userName;
-    editedMsg.date = operation.date;
-}
-
-function recordRollbackParametrs(self, indRollbackOperation, editedMsg, deleteState) {
+function applyRollback(self, editedMsg, operation, messages, indEditedMsg, token) {
+    var indRollbackOperation = operation.indRollbackOperation;
     var rollbackOperation = self.operations[indRollbackOperation];
+
     if (rollbackOperation.action == "add") {
-        editedMsg.isExist = false;
-        if (editedMsg.action == "add") {
-            deleteState();
+        if (isAddAtThisPart(token, indRollbackOperation)) {
+            messages.splice(indEditedMsg, 1);
+            return;
         }
+        editedMsg.isExist = false;
         return;
     }
     if (rollbackOperation.action == "delete") {
@@ -174,7 +162,6 @@ function recordRollbackParametrs(self, indRollbackOperation, editedMsg, deleteSt
         if (lastOperation.action == "edit") {
             editedMsg.isEdit = true;
         }
-
         return;
     }
     if (rollbackOperation.action == "edit") {
@@ -182,23 +169,42 @@ function recordRollbackParametrs(self, indRollbackOperation, editedMsg, deleteSt
         editedMsg.text = rollbackOperation.oldText;
         return;
     }
+
     throw new Error("not handled rollback of operation" + rollbackOperation.action);
 }
 
-History.prototype.getToken = function() {
-    return this.operations.length;
-};
-
-History.prototype.isPastToken = function(token) {
-    return token < this.getToken();
+function applyChanges(editedMsg, operation) {
+    switch (operation.action) {
+        case "add":
+            editedMsg.text = operation.text;
+            editedMsg.userName = operation.userName;
+            editedMsg.date = operation.date;
+            break;
+        case "delete":
+            editedMsg.isDeleted = true;
+            break;
+        case "edit":
+            editedMsg.text = operation.text;
+            editedMsg.isEdit = true;
+            break;
+        default:
+            throw new Error("not handled operation" + operation.action);
+    }
 }
 
-History.prototype.isActualToken = function(token) {
-    return token == this.getToken();
+function isPastToken(token) {
+    var encodedToken = this.getToken();
+    return token < decodeToken(encodedToken);
 }
 
-History.prototype.isFutureToken = function(token) {
-    return token > this.getToken();
+function isActualToken(token) {
+    var encodedToken = this.getToken();
+    return token == decodeToken(encodedToken);
+}
+
+function isFutureToken(token) {
+    var encodedToken = this.getToken();
+    return token > decodeToken(encodedToken);
 }
 
 History.prototype.findLastOperation = function(msgId, indexBefore) {
@@ -244,19 +250,51 @@ History.prototype.isExist = function(msgId) {
     return false;
 }
 
+function findOrCreate(array, msgId, createFn) {
+    var indexElem = indexMsgInArr(array, msgId);
+    if (indexElem == -1) {
+        var elem = createFn();
+        array.push(elem);
+        return (array.length - 1);
+    }
+    return indexElem;
+};
+
 function uniqueId() {
     var date = Date.now();
     var random = Math.random() * Math.random();
     return Math.floor(date * random).toString();
 };
 
-function indexElemInArr(arr, elemId) {
+function indexMsgInArr(arr, msgId) {
     for (var i = 0; i < arr.length; i++) {
-        if (arr[i].msgId == elemId) {
+        if (arr[i].msgId == msgId) {
             return i;
         }
     };
     return -1;
+}
+
+function encodeToken(token) {
+    var str = token.toString();
+    return new Buffer(str).toString('base64');
+}
+
+function decodeToken(code) {
+    if (code == 0) {
+        return 0;
+    }
+    var result = new Buffer(code, 'base64').toString('ascii');
+
+    if (!isStrIsNumber(result)) {
+        throw new Error("Wrong token");
+    }
+    return Number(result);
+}
+
+function isStrIsNumber(str) {
+    var regex = new RegExp(/^[0-9]+$/);
+    return regex.test(str);
 }
 
 module.exports = {

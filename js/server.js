@@ -71,26 +71,27 @@ function responseWithError(response, err) {
     response.end();
 }
 
-function remaineWait(token, continueWith) {
-    toBeResponded.push({
-        token: token,
-        continueWith: continueWith
-    });
-}
-
 function getHandler(req, res, continueWith) {
     var urlToken = getUrlToken(req.url);
-    
+
     if (urlToken == undefined) {
         continueWith(Error("Bad Request"));
         return;
     }
 
-    history.getMessages(urlToken, function(err) {
-        if (err) {
-            continueWith(err);
+    history.getMessages(urlToken, function(answer) {
+        if (answer == undefined) {
+            remaineWait(req, res, continueWith);
+            return;
+        }
+        if (answer instanceof Error) {
+            continueWith(answer);
         } else {
-            remaineWait(urlToken, continueWith)
+            var body = {
+                token: history.getToken(),
+                messages: answer
+            };
+            continueWith(body);
         }
     });
 }
@@ -138,13 +139,17 @@ function deleteHandler(req, res, continueWith) {
     });
 }
 
+function remaineWait(req, res, continueWith) {
+    toBeResponded.push({
+        request: req,
+        response: res,
+        continueWith: continueWith
+    });
+}
+
 function respondAll() {
     toBeResponded.forEach(function(waiter) {
-        var body = {
-            token: history.getToken(),
-            messages: history.getMessagesFrom(waiter.token)
-        };
-        waiter.continueWith(body);
+        getHandler(waiter.request, waiter.response, waiter.continueWith);
     });
     toBeResponded = [];
 }

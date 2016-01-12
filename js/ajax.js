@@ -51,20 +51,3 @@ function ajax(method, url, data, continueWith, continueWithError) {
     }
     return abortFn;
 }
-
-function get(url, continueWith, continueWithError) {
-    var abortFn = ajax('GET', url, null, continueWith, continueWithError);
-    return abortFn;
-}
-
-function post(url, data, continueWith, continueWithError) {
-    ajax('POST', url, data, continueWith, continueWithError);
-}
-
-function put(url, data, continueWith, continueWithError) {
-    ajax('PUT', url, data, continueWith, continueWithError);
-}
-
-function del(url, data, continueWith, continueWithError) {
-    ajax('DELETE', url, data, continueWith, continueWithError);
-}

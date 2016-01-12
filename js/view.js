@@ -1,3 +1,7 @@
+var tmplMessageOwn = _.template(document.getElementById('msg-template-own').innerHTML);
+var tmplMessageAlien = _.template(document.getElementById('msg-template-alien').innerHTML);
+
+
 function openChangeServerPopup(curentUrl) {
     $('#curentServer').text(curentUrl);
     $("#changeServer").show();
@@ -18,6 +22,10 @@ function closeNamePopup() {
     $("#modalOverlayMask").hide();
     $("#takeUsername").hide();
     $('#newMessageField').focus();
+}
+
+function hideErrorMessage() {
+    $("#offline").hide("slow");
 }
 
 function cleanHistory() {
@@ -45,7 +53,7 @@ function makeCorrectMsgView(message) {
         $("#" + messageId + " > .k1 > .deleteMarker").css("display", "none");
     }
 
-    if (message.userId == client.userId) {
+    if (message.userId == app.userId) {
         $("#" + message.msgId + " > .k3 > .rollbackBtn").css("display", "block");
 
         if (message.isDeleted) {
@@ -62,7 +70,7 @@ function makeCorrectMsgView(message) {
         }
 
     }
-    if (message.userId != client.userId) {
+    if (message.userId != app.userId) {
         if (message.isDeleted) {
             $("#" + messageId + " > .k3 > .citeBtn").css("display", "none");
         }
@@ -71,3 +79,70 @@ function makeCorrectMsgView(message) {
         }
     }
 }
+
+function showEditField(msgId) {
+    $('#newMessage').css("display", "none");
+
+    $('#editMessage').css("display", "block");
+    $('#editMessage').attr("msgId", msgId);
+    $("#editMessageField").val($("#" + msgId + " > .k2 > .text").text());
+    $('#editMessageField').focus();
+
+    $("#" + msgId).css("background-color", "#ffecdc");
+}
+
+function closeEditField(msgId) {
+    $('#editMessage').css("display", "none");
+    $('#editMessage').removeAttr("msgId");
+    $("#editMessageField").val("");
+    $("#" + msgId).css("background-color", "");
+
+    $('#newMessage').css("display", "block");
+    $('#newMessageField').focus();
+}
+
+function removeMessage(msgId) {
+    $("#" + msgId).remove();
+}
+
+function addMessageInternal(message) {
+    var curentTmpl;
+
+    if (message.userId == app.userId) {
+        curentTmpl = tmplMessageOwn;
+    } else {
+        curentTmpl = tmplMessageAlien;
+    }
+
+    var resultMessageDiv = curentTmpl({
+        time: getHourMinutes(message.date),
+        name: message.userName,
+        text: message.text,
+        id: message.msgId
+    });
+
+    $("#history").append(resultMessageDiv);
+
+    makeEventsForOwnBtns(message);
+    makeCorrectMsgView(message);
+    scrollBottom($("#history"));
+}
+
+function editMessageInternal(message) {
+    makeCorrectMsgView(message);
+    scrollBottom($("#history"));
+}
+
+function makeEventsForOwnBtns(message) {
+    if (message.userId == app.userId) {
+        $("#" + message.msgId + " > .k3 > .editBtn").on("click", function() {
+            onEditButtonClick(message.msgId);
+        });
+        $("#" + message.msgId + " > .k3 > .deleteBtn").on("click", function() {
+            client.deleteMessage(message.msgId);
+        });
+        $("#" + message.msgId + " > .k3 > .rollbackBtn").on("click", function() {
+            client.rollbackMessage(message.msgId);
+        });
+    }
+};
