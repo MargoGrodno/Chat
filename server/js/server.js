@@ -21,8 +21,10 @@ var handlerMap = {
 var errStatusMap = {
     "Deleting non-existent message": 422,
     "Rollback non-existent message": 422,
+    "Edit non-existent message": 422,
     "Nothing for rollback": 422,
     "Unsuported operation": 400,
+    "Wrong token format": 422,
     "Wrong token": 422,
     "Unsuported http request": 501,
     "Bad Request": 400

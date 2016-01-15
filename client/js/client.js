@@ -5,16 +5,28 @@ var port = '31337';
 
 
 function App() {
-    this.userName = 'Guest_' + uniqueId();
     this.userId = uniqueId();
+    this.userName = localStorage.getItem("UserName") || 'Guest_' + uniqueId();
+    this.serverUrl = localStorage.getItem("ChatURL") || '192.168.100.6:31337';
     this.history = [];
 }
 
+App.prototype.startApplication = function() {
+    changeServer(this.serverUrl);
+    updateViewName();
+}
+
+App.prototype.changeName = function (name) {
+    localStorage.setItem("UserName", name);
+    app.userName = name;
+    updateViewName();
+}
+
 function changeServer(newAddress) {
+    localStorage.setItem("ChatURL", newAddress);
     client && client.abortFn();
 
     client = new ChatClient();
-
     client.on('error', defaultErrorHandler);
     client.on('historyChanged', updateHistory);
     client.on('abort', onAbort);
@@ -31,6 +43,7 @@ function onAbort() {
 }
 
 function updateHistory(newMessages) {
+    hideErrorMessage();
     for (var i = 0; i < newMessages.length; i++) {
         updateOrCreate(newMessages[i]);
     }
@@ -38,15 +51,16 @@ function updateHistory(newMessages) {
 
 function updateOrCreate(message) {
     for (var i = 0; i < app.history.length; i++) {
-        if (app.history[i].msgId == message.msgId) {
-            updateMessage(app.history, i, message);
-            return;
-        }
+        if (app.history[i].msgId != message.msgId)
+            continue;
+
+        updateMessage(app.history, i, message);
+        return;
     };
     createMessage(app.history, message);
 }
 
-function createMessage(history, newMessage){
+function createMessage(history, newMessage) {
     history.push(newMessage);
     addMessageInternal(newMessage);
 }
@@ -61,14 +75,6 @@ function updateMessage(history, indexMsg, newState) {
     history[indexMsg] = newState;
     editMessageInternal(newState);
 }
-
-function changeName(name) {
-    app.userName = name;
-    $("#username").text(app.userName);
-}
-
-
-
 
 function onEditButtonClick(msgId) {
     var attr = $('#editMessage').attr('msgId');
@@ -105,7 +111,7 @@ function onChangeNameButtonClick() {
         return;
     }
 
-    changeName(newName);
+    app.changeName(newName);
     closeNamePopup();
 }
 
@@ -125,6 +131,7 @@ function addEventListerers() {
     onEnterPressed($("#newMessageField"), onSendButtonClick);
     $("#sendMsgButton").on('click', onSendButtonClick);
 
+
     onEnterPressed($("#editMessageField"), onSendEditButtonClick);
     $("#sendEditButton").on('click', onSendEditButtonClick);
     $("#editMessageField").keyup(function() {
@@ -135,6 +142,7 @@ function addEventListerers() {
         }
     }).keyup();
 
+
     $("#settingsButton").on("click", function() {
         openChangeServerPopup(client.mainUrl);
     });
@@ -142,6 +150,10 @@ function addEventListerers() {
     $("#changeServerButton").on("click", onChangeServerButtonClick);
     $("#cancelChangeServerButton").on("click", closeChangeServerPopup);
 
+
+    $("#profileButton").on("click", function() {
+        openChangeNamePopup();
+    });
     onEnterPressed($("#nameField"), onChangeNameButtonClick);
     $("#changeNameButton").on("click", onChangeNameButtonClick);
     $("#cancelNameButton").on("click", closeNamePopup);
@@ -166,6 +178,6 @@ var app = new App();
 
 document.onreadystatechange = function() {
     if (document.readyState == "complete") {
-        changeServer(ip + ':' + port);
+        app.startApplication()
     }
 }

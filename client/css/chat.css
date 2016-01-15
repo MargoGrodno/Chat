@@ -57,8 +57,8 @@ p {
 }
 
 .searchField {
-    min-width: 100px;
-    width: calc(100% - 56px);
+    min-width: 68px;
+    width: calc(100% - 88px);
 }
 
 .popupField {
@@ -88,7 +88,7 @@ p {
     box-sizing: border-box;
     width: 24px;
 }
-
+#profileButton,
 #settingsButton {
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
@@ -126,8 +126,8 @@ p {
     display: none;
 }
 
-#takeUsername {
-    display: block;
+#changeName {
+    display: none;
 }
 
 #modalOverlayMask {
@@ -139,7 +139,7 @@ p {
     z-index: 100;
     background-color: #000;
     opacity: 0.4;
-    display: block;
+    display: none;
 }
 
 #historyConteiner {

@@ -25,7 +25,7 @@ History.prototype.editMessage = function(message, continueWith) {
     var msgId = message.id;
 
     if (!this.isExist(msgId)) {
-        continueWith(Error("Deleting non-existent message"));
+        continueWith(Error("Edit non-existent message"));
         return;
     }
 
@@ -99,7 +99,7 @@ History.prototype.getMessages = function(encodedToken, continueWith) {
         return;
     }
     if (!isActualToken.call(this, token)) {
-        continueWith(Error("Wrong token"));
+        continueWith(Error("Wrong token format"));
         return;
     }
     continueWith();
@@ -225,27 +225,30 @@ History.prototype.findLastOperation = function(msgId, indexBefore) {
 
 History.prototype.indexLastMsgOperationBefore = function(msgId, indexFrom) {
     for (var i = indexFrom - 1; i >= 0; i--) {
-        if (this.operations[i].msgId == msgId) {
-            return (i);
-        }
+        if (this.operations[i].msgId != msgId)
+            continue;
+        
+        return (i);
     };
     return (-1);
 }
 
 History.prototype.getUserIdByMsgId = function(msgId) {
     for (var i = 0; i < this.operations.length; i++) {
-        if (this.operations[i].msgId == msgId) {
-            return this.operations[i].userId;
-        }
+        if (this.operations[i].msgId != msgId) 
+            continue;
+            
+        return this.operations[i].userId;       
     };
     return -1;
 }
 
 History.prototype.isExist = function(msgId) {
     for (var i = this.operations.length - 1; i >= 0; i--) {
-        if (this.operations[i].msgId == msgId) {
-            return true;
-        }
+        if (this.operations[i].msgId != msgId) 
+            continue;
+        
+        return true;
     };
     return false;
 }
@@ -268,9 +271,10 @@ function uniqueId() {
 
 function indexMsgInArr(arr, msgId) {
     for (var i = 0; i < arr.length; i++) {
-        if (arr[i].msgId == msgId) {
-            return i;
-        }
+        if (arr[i].msgId != msgId)
+            continue;
+
+        return i;
     };
     return -1;
 }

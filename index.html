@@ -5,11 +5,11 @@
     <meta charset="UTF-8">
     <title>Default chat</title>
     <meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0" />
-    <link rel="stylesheet" type="text/css" href="css/chat.css" />
-    <link rel="stylesheet" href="bower_components/font-awesome/css/font-awesome.min.css">
-    <script src="bower_components/jquery/dist/jquery.min.js"></script>
-    <script src="bower_components/lodash/lodash.min.js"></script>
-    <script src="bower_components/emitter.js/emitter.js"></script>
+    <link rel="stylesheet" type="text/css" href="client/css/chat.css" />
+    <link rel="stylesheet" href="client/bower_components/font-awesome/css/font-awesome.min.css">
+    <script src="client/bower_components/jquery/dist/jquery.min.js"></script>
+    <script src="client/bower_components/lodash/lodash.min.js"></script>
+    <script src="client/bower_components/emitter.js/emitter.js"></script>
 </head>
 
 <body>
@@ -22,8 +22,8 @@
         <button class="popupButton" id="cancelChangeServerButton" type="button">Cancel </button>
         <button class="popupButton" id="changeServerButton" type="button">Change </button>
     </div>
-    <div class="popup" id="takeUsername">
-        <p>Hello! Please, enter your name ;)</p>
+    <div class="popup" id="changeName">
+        <p>Please, enter your name ;)</p>
         <p class="popupErrorMessage" id="nameErrorMessage"></p>
         <input autofocus class="textField popupField" id="nameField" type="text">
         <button class="popupButton" id="cancelNameButton" type="button">Cancel </button>
@@ -32,10 +32,11 @@
     <div id="modalOverlayMask"></div>
     <div class="content">
         <div class="header">
-            <div id="username">Guest</div>
+            <div id="username"></div>
             <div class="search">
                 <input class="textField searchField" type="text" placeholder="Search">
                 <button id="searchButton" type="button"><i class="fa fa-search"></i> </button>
+                <button id="profileButton" type="button" title="Change name"><i class="fa fa-user"></i></i></button>
                 <button id="settingsButton" type="button" title="Change server"><i class=" fa fa-cog "></i>
                 </button>
             </div>
@@ -116,10 +117,10 @@
         </div>
     </div>
 </script>
-<script src="js/ajax.js"></script>
-<script src="js/utils.js"></script>
-<script src="js/view.js"></script>
-<script src="js/chatClientClass.js"></script>
-<script src="js/client.js"></script>
+<script src="client/js/ajax.js"></script>
+<script src="client/js/utils.js"></script>
+<script src="client/js/view.js"></script>
+<script src="client/js/chatClientClass.js"></script>
+<script src="client/js/client.js"></script>
 
 </html>
