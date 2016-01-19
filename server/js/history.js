@@ -90,7 +90,7 @@ History.prototype.getMessages = function(encodedToken, continueWith) {
     var token = decodeToken(encodedToken);
 
     if (isFutureToken.call(this, token)) {
-        continueWith(Error("Wrong token"));
+        continueWith(null, Error("Wrong token"));
         return;
     }
     if (isPastToken.call(this, token)) {
@@ -99,7 +99,7 @@ History.prototype.getMessages = function(encodedToken, continueWith) {
         return;
     }
     if (!isActualToken.call(this, token)) {
-        continueWith(Error("Wrong token format"));
+        continueWith(null, Error("Wrong token format"));
         return;
     }
     continueWith();

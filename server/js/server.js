@@ -80,20 +80,20 @@ function getHandler(req, res, continueWith) {
         return;
     }
 
-    history.getMessages(urlToken, function(answer) {
-        if (answer == undefined) {
-            remaineWait(req, res, continueWith);
+    history.getMessages(urlToken, function(answer, error) {
+        if (error !== undefined) {
+            continueWith(error);
             return;
         }
-        if (answer instanceof Error) {
-            continueWith(answer);
-        } else {
+        if (answer !== undefined) {
             var body = {
                 token: history.getToken(),
                 messages: answer
             };
             continueWith(body);
+            return;
         }
+        remaineWait(req, res, continueWith);
     });
 }
 
