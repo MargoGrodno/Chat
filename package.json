@@ -18,5 +18,8 @@
   "homepage": "https://github.com/MargoGrodno/Chat#readme",
   "dependencies": {
     "espress": "0.0.0"
-  }
+  },
+  "engines": {
+    "node": "4.1.1"
+  },
 }
