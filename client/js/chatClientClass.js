@@ -1,8 +1,9 @@
 'use strict';
 
-function ChatClient() {
+function ChatClient(app) {
     this.token = 0;
     this.abortFn = null;
+    this.app = app;
     Emitter(this);
 }
 
@@ -16,11 +17,13 @@ ChatClient.prototype.run = function(url) {
                 loop.apply(self);
             }, 1000);
         });
-
-        self.abortFn = function () {
+        self.abortFn = function() {
             abortFn();
+            setTimeout(function() {
+                self.abortFn();
+            }, 1000); 
             self.emit('abort');
-        } 
+        }
     }
     loop();
 }
@@ -35,21 +38,22 @@ ChatClient.prototype.getMessages = function(continueWith) {
         self.emit('historyChanged', response.messages);
         continueWith();
     }, function(error) {
-        console.log(error);
         self.emit('error', error);
         continueWith();
     });
     return abortFn;
 };
 
-ChatClient.prototype.postMessage = function(msgText) {
-    var message = theMessage(msgText);
+ChatClient.prototype.postMessage = function(text) {
+    var message = this.app.theMessage(text);
     this.post('http://' + this.mainUrl,
         JSON.stringify(message),
         function() {
-            console.log('Message sent ' + msgText);
+            console.log('Message sent ' + text);
         },
-        defaultErrorHandler);
+        function(error) {
+            self.emit('error', error);
+        });
 };
 
 ChatClient.prototype.editMessage = function(msgId, newText) {
@@ -61,7 +65,9 @@ ChatClient.prototype.editMessage = function(msgId, newText) {
         function() {
             console.log('Message edit ' + msgId + "  " + newText);
         },
-        defaultErrorHandler);
+        function(error) {
+            self.emit('error', error);
+        });
 };
 
 ChatClient.prototype.deleteMessage = function(messageId) {
@@ -73,7 +79,9 @@ ChatClient.prototype.deleteMessage = function(messageId) {
         function() {
             console.log('Message deleted ' + messageId);
         },
-        defaultErrorHandler);
+        function(error) {
+            self.emit('error', error);
+        });
 };
 
 ChatClient.prototype.rollbackMessage = function(messageId, continueWith) {
@@ -85,7 +93,9 @@ ChatClient.prototype.rollbackMessage = function(messageId, continueWith) {
         function() {
             console.log('Message rollback ' + messageId);
         },
-        defaultErrorHandler);
+        function(error) {
+            self.emit('error', error);
+        });
 };
 
 ChatClient.prototype.get = function(url, continueWith, continueWithError) {
@@ -103,14 +113,4 @@ ChatClient.prototype.put = function(url, data, continueWith, continueWithError) 
 
 ChatClient.prototype.delete = function(url, data, continueWith, continueWithError) {
     ajax('DELETE', url, data, continueWith, continueWithError);
-};
-
-var theMessage = function(text) {
-    var date = new Date();
-    return {
-        userId: app.userId,
-        userName: app.userName,
-        date: date.getTime(),
-        text: text
-    };
 };

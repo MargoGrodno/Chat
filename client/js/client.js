@@ -30,6 +30,8 @@ app.on('appStateChanged', function() {
     view.removeMessage(messageId);
 }).on('abort', function() {
     view.cleanHistory();
+}).on('error', function(message) {
+    view.showErrorMessage(message);
 });
 
 
@@ -39,13 +41,6 @@ document.onreadystatechange = function() {
     }
 };
 
-function defaultErrorHandler(message) {
-    var error = 'ERROR:\n' + message + '\n';
-    $("#offline").text(error);
-    $("#offline").show(1000);
-    console.error(message);
-};
-
 window.onerror = function(err) {
-    defaultErrorHandler(err.toString());
+    view.showErrorMessage(err.toString());
 };

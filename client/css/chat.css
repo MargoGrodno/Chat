@@ -10,6 +10,10 @@ p {
     margin: 5px;
 }
 
+.hidden{
+    display: none;
+}
+
 .content {
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
@@ -37,7 +41,7 @@ p {
     padding: 10px;
 }
 
-.search {
+.menu {
     float: right;
     max-width: 320px;
     font-size: 0;
@@ -240,17 +244,6 @@ p {
     width: 27px;
 }
 
-.citeBtn,
-.editBtn,
-.deleteBtn,
-.rollbackBtn {
-    display: none;
-}
-
-.deleteMarker {
-    display: none;
-}
-
 .messageConteiner:hover {
     background: #ffffed;
 }
@@ -272,7 +265,7 @@ p {
     #username {
         display: none;
     }
-    .search {
+    .menu {
         width: 100%;
     }
     .messageConteiner {

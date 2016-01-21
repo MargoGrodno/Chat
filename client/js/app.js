@@ -19,15 +19,15 @@ App.prototype.setOptions = function() {
     }
 }
 
-App.prototype.startApplication = function() {
-    this.changeServer(this.serverUrl);
-}
-
 App.prototype.persistableState = function() {
     return JSON.stringify({
         name: this.userName,
         url: this.serverUrl
     });
+}
+
+App.prototype.startApplication = function() {
+    this.changeServer(this.serverUrl);
 }
 
 App.prototype.changeName = function(name) {
@@ -42,8 +42,10 @@ App.prototype.changeServer = function(newAddress) {
     this.history = [];
 
     this.client && this.client.abortFn();
-    this.client = new ChatClient();
-    this.client.on('error', defaultErrorHandler);
+    this.client = new ChatClient(this);
+    this.client.on('error', function(message) {
+        self.errorHandler(message);
+    });
     this.client.on('historyChanged', function(delta) {
         self.updateHistory(delta);
     });
@@ -51,8 +53,8 @@ App.prototype.changeServer = function(newAddress) {
         self.onAbort();
     });
 
-    this.client.run(this.serverUrl);
     this.emit('appStateChanged');
+    this.client.run(this.serverUrl);
 }
 
 App.prototype.onAbort = function() {
@@ -60,10 +62,17 @@ App.prototype.onAbort = function() {
 
     this.emit('abort');
 
-    this.client.off('error', defaultErrorHandler);
-    this.client.off('historyChanged', self.updateHistory);
-    this.client.off('abort', self.onAbort);
+    this.client.off('error');
+    this.client.off('historyChanged');
+    this.client.off('abort');
 }
+
+App.prototype.errorHandler = function(message) {
+    var error = 'ERROR:\n' + message + '\n';
+    console.error(message);
+
+    this.emit('error', error);
+};
 
 App.prototype.updateHistory = function(newMessages) {
     for (var i = 0; i < newMessages.length; i++) {
@@ -73,28 +82,38 @@ App.prototype.updateHistory = function(newMessages) {
 }
 
 App.prototype.updateOrCreate = function(message) {
-    for (var i = 0; i < app.history.length; i++) {
-        if (app.history[i].msgId != message.msgId)
+    for (var i = 0; i < this.history.length; i++) {
+        if (this.history[i].msgId != message.msgId)
             continue;
 
-        this.updateMessage(app.history, i, message);
+        this.updateMessage(i, message);
         return;
     };
-    this.createMessage(app.history, message);
+    this.createMessage(message);
 }
 
-App.prototype.createMessage = function(history, newMessage) {
-    history.push(newMessage);
+App.prototype.createMessage = function(newMessage) {
+    this.history.push(newMessage);
     this.emit('messageAdded', newMessage);
 }
 
-App.prototype.updateMessage = function(history, indexMsg, newState) {
+App.prototype.updateMessage = function(indexMsg, newState) {
     if (!newState.isExist) {
-        history.splice(indexMsg, 1);
+        this.history.splice(indexMsg, 1);
         this.emit('messageDeleted', newState.msgId);
         return;
     };
 
-    history[indexMsg] = newState;
+    this.history[indexMsg] = newState;
     this.emit('messageEdited', newState);
 }
+
+App.prototype.theMessage = function(text) {
+    var date = new Date();
+    return {
+        userId: this.userId,
+        userName: this.userName,
+        date: date.getTime(),
+        text: text
+    };
+};

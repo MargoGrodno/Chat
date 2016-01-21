@@ -15,6 +15,11 @@ View.prototype.update = function() {
     this.updateViewName();
 };
 
+View.prototype.showErrorMessage = function (message) {
+    $("#offline").text(message);
+    $("#offline").show(1000);
+};
+
 View.prototype.hideErrorMessage = function() {
     $("#offline").hide("slow");
 };
@@ -180,23 +185,30 @@ View.prototype.makeEventsForOwnBtns = function(message) {
 View.prototype.displayMarker = function(markerClass, id, isVisible) {
     var marker = $("#" + id + " > .k1 > " + markerClass);
     if (isVisible) {
-        marker.css("display", "block");
+        marker.removeClass("hidden");
         return;
     }
-    marker.css("display", "none");
+    marker.addClass("hidden");
 };
 
 View.prototype.displayBtn = function(btnClass, id, isVisible) {
     var button = $("#" + id + " > .k3 > " + btnClass);
     if (isVisible) {
-        button.css("display", "block");
+        button.removeClass("hidden");
         return;
     }
-    button.css("display", "none");
+    button.addClass("hidden");
 };
 
 View.prototype.addEventListerers = function() {
     var self = this;
+
+    onEnterPressed($("#newMessageField"), function() {
+        self.sendNewMessage();
+    });
+    $("#sendMsgButton").on('click', function() {
+        self.sendNewMessage();
+    });
 
     ifEmpty($("#editMessageField"), this.closeEditField);
     onEnterPressed($("#editMessageField"), function() {
@@ -204,13 +216,6 @@ View.prototype.addEventListerers = function() {
     });
     $("#sendEditButton").on('click', function() {
         self.sendEdit();
-    });
-
-    onEnterPressed($("#newMessageField"), function() {
-        self.sendNewMessage();
-    });
-    $("#sendMsgButton").on('click', function() {
-        self.sendNewMessage();
     });
 
     $("#settingsButton").on("click", function() {
