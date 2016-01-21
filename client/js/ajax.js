@@ -36,7 +36,7 @@ function ajax(method, url, data, continueWith, continueWithError) {
     };
 
     xhr.onerror = function(e) {
-        var errMsg = 'Server connection error http://' + client.mainUrl + '\n' +
+        var errMsg = 'Server connection error http://' + url + '\n' +
             '\n' +
             'Check if \n' +
             '- server is active\n' +

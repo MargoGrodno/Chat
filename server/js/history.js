@@ -1,4 +1,5 @@
 'use strict';
+var numberRegexp = new RegExp(/^[0-9]+$/);
 
 function History() {
     this.operations = [];
@@ -207,11 +208,11 @@ function isFutureToken(token) {
     return token > decodeToken(encodedToken);
 }
 
-History.prototype.findLastOperation = function(msgId, indexBefore) {
-    if (indexBefore === undefined) {
-        var indexBefore = this.operations.length;
+History.prototype.findLastOperation = function(msgId, startIndex) {
+    if (startIndex === undefined) {
+        var startIndex = this.operations.length;
     }
-    var indLastOperation = this.indexLastMsgOperationBefore(msgId, indexBefore);
+    var indLastOperation = this.findPrevOperation(msgId, startIndex);
     if (indLastOperation == -1) {
         return -1;
     }
@@ -223,8 +224,8 @@ History.prototype.findLastOperation = function(msgId, indexBefore) {
     }
 }
 
-History.prototype.indexLastMsgOperationBefore = function(msgId, indexFrom) {
-    for (var i = indexFrom - 1; i >= 0; i--) {
+History.prototype.findPrevOperation = function(msgId, startIndex) {
+    for (var i = startIndex - 1; i >= 0; i--) {
         if (this.operations[i].msgId != msgId)
             continue;
         
@@ -254,7 +255,7 @@ History.prototype.isExist = function(msgId) {
 }
 
 function findOrCreate(array, msgId, createFn) {
-    var indexElem = indexMsgInArr(array, msgId);
+    var indexElem = indexInArr(array, msgId);
     if (indexElem == -1) {
         var elem = createFn();
         array.push(elem);
@@ -269,7 +270,7 @@ function uniqueId() {
     return Math.floor(date * random).toString();
 };
 
-function indexMsgInArr(arr, msgId) {
+function indexInArr(arr, msgId) {
     for (var i = 0; i < arr.length; i++) {
         if (arr[i].msgId != msgId)
             continue;
@@ -297,8 +298,7 @@ function decodeToken(code) {
 }
 
 function isStrIsNumber(str) {
-    var regex = new RegExp(/^[0-9]+$/);
-    return regex.test(str);
+    return numberRegexp.test(str);
 }
 
 module.exports = {

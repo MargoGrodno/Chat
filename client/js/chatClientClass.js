@@ -1,14 +1,13 @@
+'use strict';
 
 function ChatClient() {
     this.token = 0;
     this.abortFn = null;
+    Emitter(this);
 }
-
-Emitter(ChatClient.prototype);
 
 ChatClient.prototype.run = function(url) {
     this.mainUrl = url;
-    addEventListerers();
     var self = this;
 
     function loop() {
@@ -16,7 +15,8 @@ ChatClient.prototype.run = function(url) {
             setTimeout(function() {
                 loop.apply(self);
             }, 1000);
-        })
+        });
+
         self.abortFn = function () {
             abortFn();
             self.emit('abort');
@@ -44,7 +44,7 @@ ChatClient.prototype.getMessages = function(continueWith) {
 
 ChatClient.prototype.postMessage = function(msgText) {
     var message = theMessage(msgText);
-    this.post('http://' + client.mainUrl,
+    this.post('http://' + this.mainUrl,
         JSON.stringify(message),
         function() {
             console.log('Message sent ' + msgText);
@@ -53,7 +53,7 @@ ChatClient.prototype.postMessage = function(msgText) {
 };
 
 ChatClient.prototype.editMessage = function(msgId, newText) {
-    this.put('http://' + client.mainUrl,
+    this.put('http://' + this.mainUrl,
         JSON.stringify({
             id: msgId,
             text: newText
@@ -65,7 +65,7 @@ ChatClient.prototype.editMessage = function(msgId, newText) {
 };
 
 ChatClient.prototype.deleteMessage = function(messageId) {
-    this.delete('http://' + client.mainUrl + '/' + messageId,
+    this.delete('http://' + this.mainUrl + '/' + messageId,
         JSON.stringify({
             id: messageId,
             method: "delete"
@@ -77,7 +77,7 @@ ChatClient.prototype.deleteMessage = function(messageId) {
 };
 
 ChatClient.prototype.rollbackMessage = function(messageId, continueWith) {
-    this.delete('http://' + client.mainUrl + '/' + messageId,
+    this.delete('http://' + this.mainUrl + '/' + messageId,
         JSON.stringify({
             id: messageId,
             method: "rollback"
