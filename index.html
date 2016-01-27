@@ -14,9 +14,9 @@
 
 <body>
     <div class="popup" id="changeServer">
-        <p>Curent server address is <span id="curentServer"></span>
-            <br>
-            <br>Enter address of new server in format "ip:port" :</p>
+        <p>Curent server address is : </p>
+        <span id="curentServer"></span>
+        <p>Enter new server address:</p>
         <p class="popupErrorMessage" id="changeServerErrorMessage"></p>
         <input class="textField popupField" id="serverAddressField" type="text">
         <button class="popupButton" id="cancelChangeServerButton" type="button">Cancel </button>
@@ -35,9 +35,9 @@
             <div id="username"></div>
             <div class="menu">
                 <input class="textField searchField" type="text" placeholder="Search">
-                <button id="searchButton" type="button"><i class="fa fa-search"></i> </button>
-                <button id="profileButton" type="button" title="Change name"><i class="fa fa-user"></i></i></button>
-                <button id="settingsButton" type="button" title="Change server"><i class=" fa fa-cog "></i>
+                <button id="searchButton" class="menuBtn" type="button"><i class="fa fa-search"></i> </button>
+                <button id="profileButton" class="menuBtn" type="button" title="Change name"><i class="fa fa-user"></i></i></button>
+                <button id="settingsButton" class="menuBtn" type="button" title="Change server"><i class=" fa fa-cog "></i>
                 </button>
             </div>
         </div>
@@ -62,10 +62,10 @@
                 <%=time%>
             </div>
             <div class="deleteMarker">
-                <i class="fa fa-trash"></i>
+                <i class="fa fa-trash marker"></i>
             </div>
             <div class="editMarker">
-                <i class="fa fa-pencil"></i>
+                <i class="fa fa-pencil marker"></i>
             </div>
         </div>
         <div class="k2">
@@ -121,8 +121,8 @@
 <script src="client/js/ajax.js"></script>
 <script src="client/js/utils.js"></script>
 <script src="client/js/view.js"></script>
-<script src="client/js/chatClientClass.js"></script>
+<script src="client/js/chatClient.js"></script>
+<script src="client/js/model.js"></script>
 <script src="client/js/app.js"></script>
-<script src="client/js/client.js"></script>
 
 </html>

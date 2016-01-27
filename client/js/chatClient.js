@@ -1,29 +1,35 @@
 'use strict';
 
-function ChatClient(app) {
+function ChatClient() {
     this.token = 0;
     this.abortFn = null;
-    this.app = app;
     Emitter(this);
 }
 
 ChatClient.prototype.run = function(url) {
     this.mainUrl = url;
     var self = this;
+    var abortFn = null;
+    var wasAborted = false;
+
+    function abort() {
+        abortFn && abortFn();
+        abortFn = null;
+        wasAborted = true;
+        self.emit('abort');
+    }
+
+    this.abortFn = abort;
 
     function loop() {
-        var abortFn = self.getMessages.call(self, function() {
+        if (wasAborted) {
+            return;
+        }
+        abortFn = self.getMessages.call(self, function() {
             setTimeout(function() {
                 loop.apply(self);
             }, 1000);
         });
-        self.abortFn = function() {
-            abortFn();
-            setTimeout(function() {
-                self.abortFn();
-            }, 1000); 
-            self.emit('abort');
-        }
     }
     loop();
 }
@@ -44,12 +50,11 @@ ChatClient.prototype.getMessages = function(continueWith) {
     return abortFn;
 };
 
-ChatClient.prototype.postMessage = function(text) {
-    var message = this.app.theMessage(text);
+ChatClient.prototype.postMessage = function(message) {
     this.post('http://' + this.mainUrl,
         JSON.stringify(message),
         function() {
-            console.log('Message sent ' + text);
+            console.log('Message sent ' + message.text);
         },
         function(error) {
             self.emit('error', error);

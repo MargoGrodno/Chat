@@ -41,7 +41,7 @@ function ajax(method, url, data, continueWith, continueWithError) {
             'Check if \n' +
             '- server is active\n' +
             '- server sends header "Access-Control-Allow-Origin:*"';
-
+        console.log(e);
         continueWithError(errMsg);
     };
     xhr.send(data);

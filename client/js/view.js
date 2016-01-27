@@ -3,8 +3,8 @@
 var tmplMessageOwn = _.template(document.getElementById('msg-template-own').innerHTML);
 var tmplMessageAlien = _.template(document.getElementById('msg-template-alien').innerHTML);
 
-function View(app) {
-    this.app = app;
+function View(model) {
+    this.model = model;
 
     Emitter(this);
     this.addEventListerers();
@@ -29,7 +29,7 @@ View.prototype.cleanHistory = function() {
 };
 
 View.prototype.updateViewName = function() {
-    $("#username").text(this.app.userName);
+    $("#username").text(this.model.userName);
 };
 
 View.prototype.putText = function(msgId, text) {
@@ -45,7 +45,7 @@ View.prototype.scrollBottom = function(elem) {
 };
 
 View.prototype.openChangeServerPopup = function() {
-    var curentUrl = this.app.client.mainUrl;
+    var curentUrl = this.model.serverUrl;
     $('#curentServer').text(curentUrl);
     $("#changeServer").show();
     $("#modalOverlayMask").show();
@@ -82,12 +82,12 @@ View.prototype.showEditField = function(msgId) {
     $("#editMessageField").val($("#" + msgId + " > .k2 > .text").text());
     $('#editMessageField').focus();
 
-    $("#" + msgId).css("background-color", "#ffecdc");
+    $("#" + msgId).addClass("editing");
 };
 
 View.prototype.closeEditField = function() {
     var editMsgId = $('#editMessage').attr("msgId");
-    $("#" + editMsgId).css("background-color", "");
+    $("#" + editMsgId).removeClass("editing");
     $('#editMessage').removeAttr("msgId");
 
     $('#editMessage').css("display", "none");
@@ -102,10 +102,10 @@ View.prototype.onEditButtonClick = function(msgId) {
     this.showEditField(msgId);
 };
 
-View.prototype.addMessageInternal = function(message) {
+View.prototype.addMessage = function(message) {
     var curentTmpl;
 
-    if (message.userId == this.app.userId) {
+    if (message.userId == this.model.userId) {
         curentTmpl = tmplMessageOwn;
     } else {
         curentTmpl = tmplMessageAlien;
@@ -125,7 +125,7 @@ View.prototype.addMessageInternal = function(message) {
     this.scrollBottom($("#history"));
 };
 
-View.prototype.editMessageInternal = function(message) {
+View.prototype.editMessage = function(message) {
     this.makeCorrectMsgView(message);
     this.scrollBottom($("#history"));
 };
@@ -169,7 +169,7 @@ View.prototype.changeName = function() {
 
 View.prototype.makeEventsForOwnBtns = function(message) {
     var self = this;
-    if (message.userId == this.app.userId) {
+    if (message.userId == this.model.userId) {
         $("#" + message.msgId + " > .k3 > .editBtn").on("click", function() {
             self.onEditButtonClick(message.msgId);
         });
@@ -251,7 +251,7 @@ View.prototype.makeCorrectMsgView = function(message) {
         this.displayMarker(".editMarker", msgId, false);
     }
 
-    if (message.userId == this.app.userId) {
+    if (message.userId == this.model.userId) {
         this.displayBtn(".rollbackBtn", msgId, true);
 
         if (message.isDeleted) {
@@ -266,7 +266,7 @@ View.prototype.makeCorrectMsgView = function(message) {
             this.displayBtn(".editBtn", msgId, false);
         }
     }
-    if (message.userId != this.app.userId) {
+    if (message.userId != this.model.userId) {
         if (message.isDeleted) {
             this.displayBtn(".citeBtn", msgId, false);
         }

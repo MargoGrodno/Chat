@@ -5,6 +5,7 @@ var url = require('url');
 var getIp = require('./getIp');
 var historyMod = require('./history');
 
+var startTime = curentDateTime();
 var history = new historyMod.History();
 var toBeResponded = [];
 
@@ -74,6 +75,15 @@ function responseWithError(response, err) {
 
 function getHandler(req, res, continueWith) {
     var urlToken = getUrlToken(req.url);
+
+    if (req.url == "/") {
+        continueWith({
+            status: "Running",
+            startTime: startTime,
+            curentToken: history.getToken()
+        });
+        return;
+    }
 
     if (urlToken == undefined) {
         continueWith(Error("Bad Request"));
@@ -172,21 +182,15 @@ function getUrlToken(u) {
     return parts.query.token;
 }
 
-function getHourMinutes(utcNumberDate) {
-    var date = new Date(utcNumberDate);
-    var hour = date.getHours();
-    var min = date.getMinutes();
-    hour = (hour < 10 ? "0" : "") + hour;
-    min = (min < 10 ? "0" : "") + min;
-    return hour + ":" + min;
-}
-
-function startServerOnArbitraryPort(defaultPort) {
-    takePortForStart(function(incomingPort) {
-        startServer(incomingPort);
-    }, function() {
-        startServer(defaultPort);
-    });
+function curentDateTime() {
+    var currentdate = new Date();
+    var datetime = currentdate.getDate() + "/" +
+        (currentdate.getMonth() + 1) + "/" +
+        currentdate.getFullYear() + " @ " +
+        currentdate.getHours() + ":" +
+        currentdate.getMinutes() + ":" +
+        currentdate.getSeconds();
+    return datetime;
 }
 
 function startServer(port) {
@@ -195,34 +199,6 @@ function startServer(port) {
     console.log('Server running at http://' + ip + ':' + port);
 }
 
-function createRL() {
-    var readline = require('readline');
-    var rl = readline.createInterface({
-        input: process.stdin,
-        output: process.stdout,
-        terminal: false
-    });
-    return rl;
-}
-
-function isStrIsNumber(str) {
-    var regex = new RegExp(/^[0-9]+$/);
-    return regex.test(str);
-}
-
-function takePortForStart(succeed, failure) {
-    var rl = createRL();
-    console.log('Enter port for server ');
-
-    rl.on('line', function(incomingStr) {
-        rl.close();
-        if (isStrIsNumber(incomingStr)) {
-            succeed(Number(incomingStr));
-        } else {
-            console.log(incomingStr + ' is not a number');
-            failure()
-        }
-    });
+module.exports = {
+    startServer: startServer
 };
-
-startServerOnArbitraryPort(31337);

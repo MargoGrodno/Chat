@@ -1,119 +1,68 @@
 'use strict';
 
-function App() {
-    this.userId = uniqueId();
-    this.userName = 'Guest_' + uniqueId();
-    this.serverUrl = '192.168.100.6:31337';
-    this.history = [];
-    this.client = null;
-    Emitter(this);
+var model = new Model();
+var client = new ChatClient;
+var view = new View(model);
 
-    this.setOptions();
-}
+view.on('userNameChanged', function(newName) {
+    model.changeName(newName);
+}).on('serverChanged', function(newUrl) {
+    model.changeServer(newUrl);
+    changeServer(model.serverUrl);
+}).on('newMessage', function(text) {
+    var message = model.theMessage(text);
+    client.postMessage(message);
+}).on("editMessage", function(msgId, newText) {
+    client.editMessage(msgId, newText);
+}).on('deleteMessage', function(id) {
+    client.deleteMessage(id);
+}).on('rollbackMessage', function(id) {
+    client.rollbackMessage(id);
+});
 
-App.prototype.setOptions = function() {
-    var appState = JSON.parse(localStorage.getItem("AppState"));
-    if (appState) {
-        this.userName = appState.name;
-        this.serverUrl = appState.url;
+model.on('chatStateChanged', function() {
+    localStorage.setItem('ChatState', model.persistableState());
+    view.update();
+}).on('historyChanged', function() {
+    view.hideErrorMessage();
+}).on('messageAdded', function(message) {
+    view.addMessage(message);
+}).on('messageEdited', function(message) {
+    view.editMessage(message);
+}).on('messageDeleted', function(messageId) {
+    view.removeMessage(messageId);
+}).on('abort', function() {
+    view.cleanHistory();
+}).on('error', function(message) {
+    view.showErrorMessage(message);
+});
+
+document.onreadystatechange = function() {
+    if (document.readyState == "complete") {
+        changeServer(model.serverUrl);
     }
-}
-
-App.prototype.persistableState = function() {
-    return JSON.stringify({
-        name: this.userName,
-        url: this.serverUrl
-    });
-}
-
-App.prototype.startApplication = function() {
-    this.changeServer(this.serverUrl);
-}
-
-App.prototype.changeName = function(name) {
-    this.userName = name;
-    this.emit('appStateChanged');
-}
-
-App.prototype.changeServer = function(newAddress) {
-    var self = this;
-
-    this.serverUrl = newAddress;
-    this.history = [];
-
-    this.client && this.client.abortFn();
-    this.client = new ChatClient(this);
-    this.client.on('error', function(message) {
-        self.errorHandler(message);
-    });
-    this.client.on('historyChanged', function(delta) {
-        self.updateHistory(delta);
-    });
-    this.client.on('abort', function() {
-        self.onAbort();
-    });
-
-    this.emit('appStateChanged');
-    this.client.run(this.serverUrl);
-}
-
-App.prototype.onAbort = function() {
-    var self = this;
-
-    this.emit('abort');
-
-    this.client.off('error');
-    this.client.off('historyChanged');
-    this.client.off('abort');
-}
-
-App.prototype.errorHandler = function(message) {
-    var error = 'ERROR:\n' + message + '\n';
-    console.error(message);
-
-    this.emit('error', error);
 };
 
-App.prototype.updateHistory = function(newMessages) {
-    for (var i = 0; i < newMessages.length; i++) {
-        this.updateOrCreate(newMessages[i]);
-    }
-    this.emit('historyChanged');
-}
-
-App.prototype.updateOrCreate = function(message) {
-    for (var i = 0; i < this.history.length; i++) {
-        if (this.history[i].msgId != message.msgId)
-            continue;
-
-        this.updateMessage(i, message);
-        return;
-    };
-    this.createMessage(message);
-}
-
-App.prototype.createMessage = function(newMessage) {
-    this.history.push(newMessage);
-    this.emit('messageAdded', newMessage);
-}
-
-App.prototype.updateMessage = function(indexMsg, newState) {
-    if (!newState.isExist) {
-        this.history.splice(indexMsg, 1);
-        this.emit('messageDeleted', newState.msgId);
-        return;
-    };
-
-    this.history[indexMsg] = newState;
-    this.emit('messageEdited', newState);
-}
-
-App.prototype.theMessage = function(text) {
-    var date = new Date();
-    return {
-        userId: this.userId,
-        userName: this.userName,
-        date: date.getTime(),
-        text: text
-    };
+window.onerror = function(err) {
+    view.showErrorMessage(err.toString());
 };
+
+function changeServer (serverUrl) {
+    client.abortFn && client.abortFn();
+    client = new ChatClient();
+
+    client.on('error', function(message) {
+        model.errorHandler(message);
+    });
+    client.on('historyChanged', function(delta) {
+        model.updateHistory(delta);
+    });    
+    client.on('abort', function() {
+        model.emit('abort');
+        client.off('error');
+        client.off('historyChanged');
+        client.off('abort');
+    });
+
+    client.run(serverUrl);
+}
