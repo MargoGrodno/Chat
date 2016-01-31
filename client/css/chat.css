@@ -38,14 +38,14 @@ button:active {
 }
 
 input {
-    -webkit-box-sizing: border-box;
-    -moz-box-sizing: border-box;
-    box-sizing: border-box;
     height: 24px;
     padding: 5px;
     border: 1px solid #2B587A;
     border-radius: 5px;
     outline: none;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 input:focus {
@@ -90,13 +90,13 @@ input:focus {
 }
 
 .content {
+    margin: 0 auto;
+    padding: 0 10px;
+    max-width: 800px;
+    height: 100%;
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
     box-sizing: border-box;
-    margin: 0 auto;
-    padding: 0 10px ;
-    max-width: 800px;
-    height: 100%;
 }
 
 .header {
@@ -107,20 +107,19 @@ input:focus {
 #username {
     width: 145px;
     float: left;
-    -webkit-box-sizing: border-box;
-    -moz-box-sizing: border-box;
-    box-sizing: border-box;
     display: inline;
     font-weight: bold;
     font-size: 26px;
     padding: 10px;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 .menu {
     float: right;
     max-width: 370px;
     font-size: 0;
-    float: right;
     width: calc(100% - 145px);
     padding: 13px 0 13px 0;
     display: inline-block;
@@ -138,34 +137,34 @@ input:focus {
 }
 
 .popupButton {
-    -webkit-box-sizing: border-box;
-    -moz-box-sizing: border-box;
-    box-sizing: border-box;
     float: right;
     margin: 5px 0 5px 10px;
     padding: 5px;
     cursor: pointer;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 #searchButton {
     border-radius: 0 5px 5px 0;
     border-width: 1px 1px 1px 0;
+    width: 24px;
+    cursor: pointer;
     -webkit-box-sizing: border-box;
     -moz-box-sizing: border-box;
     box-sizing: border-box;
-    width: 24px;
-    cursor: pointer;
 }
 
 #profileButton,
 #settingsButton {
-    -webkit-box-sizing: border-box;
-    -moz-box-sizing: border-box;
-    box-sizing: border-box;
     margin-left: 8px;
     width: 24px;
     padding: 0;
     cursor: pointer;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 .popupErrorMessage {
@@ -200,7 +199,7 @@ input:focus {
 
 #modalOverlayMask {
     display: none;
-    background-color: rgba(30,30,30,0.74902);
+    background-color: rgba(30, 30, 30, 0.74902);
     position: fixed;
     width: 100%;
     height: 100%;
@@ -242,12 +241,12 @@ input:focus {
 }
 
 .inputForm {
-    -webkit-box-sizing: border-box;
-    -moz-box-sizing: border-box;
-    box-sizing: border-box;
     padding: 10px 0;
     height: 50px;
     font-size: 0;
+    -webkit-box-sizing: border-box;
+    -moz-box-sizing: border-box;
+    box-sizing: border-box;
 }
 
 .inputField {
@@ -339,7 +338,6 @@ input:focus {
 .citeBtn:hover {
     color: #1C394F;
 }
-
 
 @media (max-width: 370px) {
     #username {

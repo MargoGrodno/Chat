@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html>
+
+<head lang="en">
+    <meta charset="UTF-8">
+    <title>Default chat</title>
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, maximum-scale=1.0" />
+    <link rel="stylesheet" type="text/css" href="css/main.css">
+</head>
+
+<body>
+    <div class="popup" id="changeServer">
+        <p>Curent server address is : </p>
+        <span id="curentServer"></span>
+        <p>Enter new server address:</p>
+        <p class="popupErrorMessage" id="changeServerErrorMessage"></p>
+        <input class="textField popupField" id="serverAddressField" type="text">
+        <button class="popupButton" id="cancelChangeServerButton" type="button">Cancel </button>
+        <button class="popupButton" id="changeServerButton" type="button">Change </button>
+    </div>
+    <div class="popup" id="changeName">
+        <p>Please, enter your name ;)</p>
+        <p class="popupErrorMessage" id="nameErrorMessage"></p>
+        <input autofocus class="textField popupField" id="nameField" type="text">
+        <button class="popupButton" id="cancelNameButton" type="button">Cancel </button>
+        <button class="popupButton" id="changeNameButton" type="button">Save </button>
+    </div>
+    <div id="modalOverlayMask"></div>
+    <div class="content">
+        <div class="header">
+            <div id="username"></div>
+            <div class="menu">
+                <input class="textField searchField" type="text" placeholder="Search">
+                <button id="searchButton" class="menuBtn" type="button"><i class="fa fa-search"></i> </button>
+                <button id="profileButton" class="menuBtn" type="button" title="Change name"><i class="fa fa-user"></i></i></button>
+                <button id="settingsButton" class="menuBtn" type="button" title="Change server"><i class=" fa fa-cog "></i>
+                </button>
+            </div>
+        </div>
+        <div id="historyConteiner">
+            <div id="offline"> </div>
+            <div id="history"> </div>
+        </div>
+        <div id="newMessage" class="inputForm">
+            <input id="newMessageField" class="inputField" type="text" placeholder="Enter your message">
+            <button id="sendMsgButton" class="sendButton" type="button">Send</button>
+        </div>
+        <div id="editMessage" class="inputForm">
+            <input id="editMessageField" class="inputField" type="text">
+            <button id="sendEditButton" class="sendButton" type="button">Edit</button>
+        </div>
+    </div>
+</body>
+<script type="text/template" id="msg-template-alien">
+    <div class="messageConteiner" id="<%=id%>">
+        <div class="k1">
+            <div class="time">
+                <%=time%>
+            </div>
+            <div class="deleteMarker">
+                <i class="fa fa-trash marker"></i>
+            </div>
+            <div class="editMarker">
+                <i class="fa fa-pencil marker"></i>
+            </div>
+        </div>
+        <div class="k2">
+            <div class="name">
+                <%=name%>
+            </div>
+            <div class="text">
+                <%=text%>
+            </div>
+        </div>
+        <div class="k3">
+            <div class="citeBtn">
+                <i class="fa fa-reply"></i>
+            </div>
+        </div>
+    </div>
+</script>
+<script type="text/template" id="msg-template-own">
+    <div class="messageConteiner" id="<%=id%>">
+        <div class="k1">
+            <div class="time">
+                <%=time%>
+            </div>
+            <div class="deleteMarker">
+                <i class="fa fa-trash"></i>
+            </div>
+            <div class="editMarker">
+                <i class="fa fa-pencil"></i>
+            </div>
+        </div>
+        <div class="k2">
+            <div class="name">
+                <%=name%>
+            </div>
+            <div class="text">
+                <%=text%>
+            </div>
+        </div>
+        <div class="k3">
+            <div class="rollbackBtn">
+                <i class="fa fa-times"></i>
+            </div>
+            <div class="deleteBtn">
+                <i class="fa fa-trash"></i>
+            </div>
+            <div class="editBtn">
+                <i class="fa fa-pencil"></i>
+            </div>
+        </div>
+    </div>
+</script>
+
+<script src="js/main.min.js"></script>
+
+</html>
